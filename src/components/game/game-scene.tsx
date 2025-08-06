@@ -43,7 +43,7 @@ function Player() {
     playerRef.current.position.x = THREE.MathUtils.lerp(
       playerRef.current.position.x,
       targetX.current,
-      delta * 10 
+      delta * 10
     );
   });
 

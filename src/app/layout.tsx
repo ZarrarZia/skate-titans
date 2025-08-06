@@ -24,7 +24,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <div 
+        <div
           className="fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat bg-fixed"
           style={{ backgroundImage: "url('https://placehold.co/1920x1080/0d0712/1d1128.png')" }}
           data-ai-hint="graffiti subway wall"
