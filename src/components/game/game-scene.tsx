@@ -74,8 +74,9 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
   const carsRef = useRef<CarData[]>([]);
   const [iteration, setIteration] = useState(0); 
 
-  const spawnTimer = useRef(0);
+  const spawnTimer = useRef(1.5);
   const playerBox = useMemo(() => new THREE.Box3(), []);
+  const elapsedTime = useRef(0);
 
   const roadSegment1Ref = useRef<THREE.Group>(null!);
   const roadSegment2Ref = useRef<THREE.Group>(null!);
@@ -93,6 +94,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
       if (roadSegment2Ref.current) roadSegment2Ref.current.position.z = -ROAD_LENGTH;
       jumpCount.current = 2;
       jumpCooldown.current = 0;
+      elapsedTime.current = 0;
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
       setIteration(i => i + 1);
     }
@@ -110,6 +112,8 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
       return;
     }
 
+    elapsedTime.current += delta;
+
     if (jumpCooldown.current > 0) {
       jumpCooldown.current -= 1; 
       if (jumpCooldown.current <= 0) {
@@ -119,17 +123,21 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
     }
     
-    const speed = 10;
-    robotRef.current.position.z -= delta * speed;
+    const initialSpeed = 8;
+    const speedRamp = 0.2;
+    const speed = initialSpeed + elapsedTime.current * speedRamp;
+    
+    if(robotRef.current) {
+      robotRef.current.position.z -= delta * speed;
+    }
     
     // Camera logic
     state.camera.position.z = robotRef.current.position.z + 10;
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, robotRef.current.position.x, delta * 2);
     
-    // Make the camera look at a point slightly above the robot's base, but not at its jumping height
     const lookAtTarget = new THREE.Vector3(
       robotRef.current.position.x,
-      2, // A fixed height for the camera to look at
+      2, 
       robotRef.current.position.z
     );
     state.camera.lookAt(lookAtTarget);
@@ -143,8 +151,12 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     }
 
     spawnTimer.current += delta;
-    if (spawnTimer.current > 1) { 
-        spawnTimer.current = Math.random(); 
+    const initialSpawnRate = 1.8;
+    const minSpawnRate = 0.5;
+    const spawnRate = Math.max(minSpawnRate, initialSpawnRate - elapsedTime.current * 0.05);
+
+    if (spawnTimer.current > spawnRate) { 
+        spawnTimer.current = Math.random() * 0.5; // Add slight randomness
         const lane = Math.floor(Math.random() * NUM_LANES);
         const laneX = (lane - 1) * LANE_WIDTH;
         
@@ -158,8 +170,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     }
 
     if (robotRef.current) {
-      const robotMesh = robotRef.current;
-      playerBox.setFromObject(robotMesh).expandByScalar(-0.5); // Adjust bounding box
+      playerBox.setFromObject(robotRef.current);
     }
 
     const activeCars: CarData[] = [];
@@ -187,13 +198,12 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     if (jumpCount.current > 0) {
       jumpCount.current--;
       if (jumpCooldown.current <= 0) {
-        // Start cooldown in frames (e.g., 120s * 60fps)
         jumpCooldown.current = 120; 
       }
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
-      return true; // Jump is allowed
+      return true;
     }
-    return false; // No jumps left
+    return false;
   };
   
   return (
