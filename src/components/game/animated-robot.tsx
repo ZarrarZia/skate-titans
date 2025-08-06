@@ -86,7 +86,7 @@ export function AnimatedRobot() {
     setWaving(false);
   };
   
-  const bodyMaterial = <meshStandardMaterial color="gray" metalness={0.9} roughness={0.3} />;
+  const bodyMaterial = <meshStandardMaterial color="#EAEAEA" metalness={0.9} roughness={0.3} />;
 
   return (
     <group 
