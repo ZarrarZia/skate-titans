@@ -126,6 +126,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       carsRef.current = [];
       if (robotRef.current) {
         robotRef.current.position.set(0, 1.2, 0);
+        robotRef.current.visible = false;
       }
       if (roadSegment1Ref.current) roadSegment1Ref.current.position.z = 0;
       if (roadSegment2Ref.current) roadSegment2Ref.current.position.z = -ROAD_LENGTH;
@@ -138,17 +139,17 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       setScore(score.current);
       setIteration(i => i + 1);
     }
+     if (gameState === 'playing' && robotRef.current) {
+        robotRef.current.visible = true;
+    }
   }, [gameState, setJumpState, setScore]);
 
 
   useFrame((state, delta) => {
     if (gameState !== 'playing') {
-      if (robotRef.current && gameState === 'characterSelect') {
-        const lookAtPos = new THREE.Vector3(0,2,0);
-        state.camera.position.x = 0;
-        state.camera.position.y = 5;
-        state.camera.position.z = 10;
-        state.camera.lookAt(lookAtPos);
+      if(gameState === 'characterSelect') {
+         state.camera.position.set(0, 5, 10);
+         state.camera.lookAt(0, 2, 0);
       }
       return;
     }
@@ -172,17 +173,17 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     }
     
     
-    if (roadSegment1Ref.current) roadSegment1Ref.current.position.z = (robotRef.current.position.z % (ROAD_LENGTH * 2)) + ROAD_LENGTH;
-    if (roadSegment2Ref.current) roadSegment2Ref.current.position.z = (robotRef.current.position.z % (ROAD_LENGTH * 2));
+    if (roadSegment1Ref.current) roadSegment1Ref.current.position.z = (robotRef.current.position.z % (ROAD_LENGTH * 2)) + ROAD_LENGTH / 2;
+    if (roadSegment2Ref.current) roadSegment2Ref.current.position.z = (robotRef.current.position.z % (ROAD_LENGTH * 2)) - ROAD_LENGTH / 2;
     
     
     state.camera.position.z = robotRef.current.position.z + 10;
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, robotRef.current.position.x, delta * 2);
     
     const lookAtTarget = new THREE.Vector3(
-    robotRef.current.position.x,
-    2, 
-    robotRef.current.position.z
+      robotRef.current.position.x,
+      2, 
+      robotRef.current.position.z
     );
     state.camera.lookAt(lookAtTarget);
 
@@ -215,7 +216,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     const activeCars: CarData[] = [];
     for (const car of carsRef.current) {
         // Move car towards player
-        car.position.z += delta * gameSpeed.current * 1.5;
+        car.position.z += delta * gameSpeed.current * 0.5;
 
         // Cleanup cars that are behind the player
         if (car.position.z > robotRef.current.position.z + 20) {
@@ -255,7 +256,9 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
   
   return (
     <>
-      <CharacterModel ref={robotRef} selectedCharacter={selectedCharacter} gameState={gameState} onJump={handleJump} />
+      {gameState === 'playing' && (
+         <CharacterModel ref={robotRef} selectedCharacter={selectedCharacter} gameState={gameState} onJump={handleJump} />
+      )}
       
       {gameState === 'characterSelect' && <Garage character={selectedCharacter} />}
       
