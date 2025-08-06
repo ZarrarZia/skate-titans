@@ -143,7 +143,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
 
   useFrame((state, delta) => {
     if (gameState !== 'playing') {
-      if (robotRef.current) {
+      if (robotRef.current && gameState === 'characterSelect') {
         const lookAtPos = new THREE.Vector3(0,2,0);
         state.camera.position.x = 0;
         state.camera.position.y = 5;
@@ -209,7 +209,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     
     playerBox.setFromObject(robotRef.current);
     const playerHeight = playerBox.max.y - playerBox.min.y;
-    playerBox.min.y += playerHeight * 0.2; // Making the hitbox smaller to avoid unfair collisions
+    playerBox.min.y += playerHeight * 0.2;
     playerBox.max.y -= playerHeight * 0.2;
     
     const activeCars: CarData[] = [];
@@ -257,16 +257,16 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     <>
       <CharacterModel ref={robotRef} selectedCharacter={selectedCharacter} gameState={gameState} onJump={handleJump} />
       
-      {(gameState === 'menu' || gameState === 'characterSelect') && <Garage character={selectedCharacter} />}
+      {gameState === 'characterSelect' && <Garage character={selectedCharacter} />}
       
-      {gameState !== 'menu' && gameState !== 'characterSelect' && (
+      {gameState === 'playing' && (
         <>
             <RoadSegment fRef={roadSegment1Ref} position={[0,0,0]} />
             <RoadSegment fRef={roadSegment2Ref} position={[0,0,-ROAD_LENGTH]} />
         </>
       )}
 
-      {carsRef.current.map(car => (
+      {gameState === 'playing' && carsRef.current.map(car => (
           <CarModel key={car.id} fRef={car.ref} position={car.position} />
       ))}
     </>
