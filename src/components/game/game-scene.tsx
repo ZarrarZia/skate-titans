@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -6,7 +7,7 @@ import type { GameState } from '@/app/play/page';
 import { useFrame } from '@react-three/fiber';
 import { useRef, useState, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
-import { Car } from './car';
+import { CarModel } from './car-model';
 
 const LANE_WIDTH = 3;
 const NUM_LANES = 3;
@@ -116,7 +117,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
 
     if (jumpCooldown.current > 0) {
       jumpCooldown.current -= 1; 
-      if (jumpCooldown.current < 0) { // Changed to < 0 to avoid floating point issues
+      if (jumpCooldown.current < 0) { 
         jumpCount.current = 2;
         jumpCooldown.current = 0;
       }
@@ -152,18 +153,18 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
 
     spawnTimer.current -= delta;
     const initialSpawnRate = 2.0;
-    const minSpawnRate = 0.6;
+    const minSpawnRate = 1.0;
     const spawnRateRamp = 0.02;
     const currentSpawnRate = Math.max(minSpawnRate, initialSpawnRate - elapsedTime.current * spawnRateRamp);
 
     if (spawnTimer.current <= 0) { 
-        spawnTimer.current = currentSpawnRate + (Math.random() - 0.5) * 0.4;
+        spawnTimer.current = currentSpawnRate + (Math.random() - 0.5) * 0.8;
         const lane = Math.floor(Math.random() * NUM_LANES);
         const laneX = (lane - 1) * LANE_WIDTH;
         
         carsRef.current.push({
             id: nextCarId++,
-            position: new THREE.Vector3(laneX, 0.75, robotRef.current.position.z - 80),
+            position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - 80),
             ref: React.createRef<THREE.Group>(),
             box: new THREE.Box3(),
         });
@@ -182,13 +183,8 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
 
         if (car.ref.current) {
             car.box.setFromObject(car.ref.current);
-            // The crucial fix: check if the player's bounding box intersects AND
-            // if the player is not clearly above the car.
             if (playerBox.intersectsBox(car.box)) {
-                // Check if player's bottom is above car's top
-                if (playerBox.min.y > car.box.max.y) {
-                    // This is a successful jump, do nothing
-                } else {
+                if (playerBox.min.y < car.box.max.y) {
                     setGameState('gameOver');
                 }
             }
@@ -227,7 +223,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
       )}
 
       {carsRef.current.map(car => (
-          <Car key={car.id} carRef={car.ref} position={car.position} color={`hsl(${car.id * 40}, 80%, 50%)`} />
+          <CarModel key={car.id} fRef={car.ref} position={car.position} />
       ))}
     </>
   );
