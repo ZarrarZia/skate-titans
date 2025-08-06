@@ -1,6 +1,6 @@
 
 'use client';
-
+import * as React from 'react';
 import * as THREE from 'three';
 
 // Utility: get a random item from an array
@@ -37,8 +37,10 @@ interface CarModelProps {
 }
 
 export function CarModel({ fRef, position }: CarModelProps) {
-  const type = randomFrom(carTypes);
-  const color = randomFrom(carColors);
+  const { type, color } = React.useMemo(() => ({
+    type: randomFrom(carTypes),
+    color: randomFrom(carColors),
+  }), []);
 
   return (
     <group ref={fRef} position={position}>
@@ -61,8 +63,8 @@ export function CarModel({ fRef, position }: CarModelProps) {
         [-(type.bodyLength / 2.5), (type.bodyLength/2.5)].map((z) => (
           <mesh
             key={`wheel-${x}-${z}`}
-            position={[x, 0.2, z]}
-            rotation={[Math.PI / 2, 0, 0]}>
+            position={[x, 0.25, z]}
+            rotation={[0, 0, Math.PI / 2]}>
             <cylinderGeometry args={[0.25, 0.25, 0.2, 16]} />
             <meshStandardMaterial color="#222" />
           </mesh>
