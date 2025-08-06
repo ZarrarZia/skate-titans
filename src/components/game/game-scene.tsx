@@ -111,7 +111,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     }
 
     if (jumpCooldown.current > 0) {
-      jumpCooldown.current -= delta;
+      jumpCooldown.current -= 60 * delta; // Cooldown ticks down
       if (jumpCooldown.current <= 0) {
         jumpCount.current = 2;
         jumpCooldown.current = 0;
@@ -122,13 +122,18 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     const speed = 10;
     robotRef.current.position.z -= delta * speed;
     
+    // Camera logic
     state.camera.position.z = robotRef.current.position.z + 10;
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, robotRef.current.position.x, delta * 2);
-    state.camera.lookAt(
+    
+    // Make the camera look at a point slightly above the robot's base, but not at its jumping height
+    const lookAtTarget = new THREE.Vector3(
       robotRef.current.position.x,
-      robotRef.current.position.y,
+      2, // A fixed height for the camera to look at
       robotRef.current.position.z
     );
+    state.camera.lookAt(lookAtTarget);
+
 
     if (roadSegment1Ref.current && roadSegment1Ref.current.position.z > state.camera.position.z + ROAD_LENGTH / 2) {
       roadSegment1Ref.current.position.z -= ROAD_LENGTH * 2;
@@ -153,10 +158,8 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     }
 
     if (robotRef.current) {
-      const robotMesh = robotRef.current.children[0];
-      if (robotMesh) {
-          playerBox.setFromObject(robotMesh);
-      }
+      const robotMesh = robotRef.current;
+      playerBox.setFromObject(robotMesh).expandByScalar(-0.5); // Adjust bounding box
     }
 
     const activeCars: CarData[] = [];
@@ -184,7 +187,8 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     if (jumpCount.current > 0) {
       jumpCount.current--;
       if (jumpCooldown.current <= 0) {
-        jumpCooldown.current = 120;
+        // Start cooldown in frames (e.g., 120s * 60fps)
+        jumpCooldown.current = 120 * 60; 
       }
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
       return true; // Jump is allowed

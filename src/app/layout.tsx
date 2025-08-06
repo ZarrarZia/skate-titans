@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -11,6 +12,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isGamePage = pathname === '/play';
+
   return (
     <html lang="en" className="dark">
       <head>
@@ -32,9 +36,9 @@ export default function RootLayout({
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
         </div>
         <div className="relative flex min-h-screen flex-col">
-          <Header />
+          {!isGamePage && <Header />}
           <main className="flex-1">{children}</main>
-          <Footer />
+          {!isGamePage && <Footer />}
         </div>
         <Toaster />
         <AdaptiveAmbiance />
