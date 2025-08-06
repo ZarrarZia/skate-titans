@@ -197,13 +197,15 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
         const lane = Math.floor(Math.random() * NUM_LANES);
         const laneX = (lane - 1) * LANE_WIDTH;
         
-        carsRef.current.push({
-            id: nextCarId++,
-            position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - 150),
-            ref: React.createRef<THREE.Group>(),
-            box: new THREE.Box3(),
-        });
-        setIteration(i => i + 1);
+        if (robotRef.current) {
+          carsRef.current.push({
+              id: nextCarId++,
+              position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - 150),
+              ref: React.createRef<THREE.Group>(),
+              box: new THREE.Box3(),
+          });
+          setIteration(i => i + 1);
+        }
     }
     
     if (robotRef.current) {
