@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense } from 'react';
@@ -6,7 +7,7 @@ import { PerspectiveCamera, KeyboardControls, type KeyboardControlsEntry } from 
 import { GameScene } from '@/components/game/game-scene';
 import { Color } from 'three';
 import * as THREE from 'three';
-import type { GameState } from '@/app/play/page';
+import type { GameState, Character } from '@/app/play/page';
 
 export enum Controls {
   left = 'left',
@@ -21,9 +22,10 @@ interface GameCanvasProps {
   setGameState: (state: GameState) => void;
   setJumpState: (state: { count: number; cooldown: number }) => void;
   setScore: (score: number) => void;
+  selectedCharacter: Character;
 }
 
-export function GameCanvas({ gameState, setGameState, setJumpState, setScore }: GameCanvasProps) {
+export function GameCanvas({ gameState, setGameState, setJumpState, setScore, selectedCharacter }: GameCanvasProps) {
   const map: KeyboardControlsEntry<Controls>[] = [
     { name: Controls.left, keys: ['ArrowLeft', 'a', 'A'] },
     { name: Controls.right, keys: ['ArrowRight', 'd', 'D'] },
@@ -54,7 +56,13 @@ export function GameCanvas({ gameState, setGameState, setJumpState, setScore }: 
             shadow-camera-bottom={-20}
           />
            <pointLight position={[-10, 5, -10]} intensity={1} color="white" />
-          <GameScene gameState={gameState} setGameState={setGameState} setJumpState={setJumpState} setScore={setScore} />
+          <GameScene 
+            gameState={gameState} 
+            setGameState={setGameState} 
+            setJumpState={setJumpState} 
+            setScore={setScore} 
+            selectedCharacter={selectedCharacter}
+          />
         </Suspense>
       </Canvas>
     </KeyboardControls>

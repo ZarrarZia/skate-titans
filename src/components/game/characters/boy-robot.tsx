@@ -13,12 +13,12 @@ const NUM_LANES = 3;
 const JUMP_HEIGHT = 4;
 const GRAVITY = -15;
 
-interface AnimatedRobotProps {
+interface RobotProps {
   gameState: GameState;
   onJump?: () => boolean;
 }
 
-export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ gameState, onJump }, ref) => {
+export const BoyRobot = forwardRef<THREE.Group, RobotProps>(({ gameState, onJump }, ref) => {
   const internalRobotRef = useRef<THREE.Group>(null!);
   useImperativeHandle(ref, () => internalRobotRef.current);
 
@@ -40,23 +40,25 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
   const rightPressed = useKeyboardControls((state) => state[Controls.right]);
   const jumpPressed = useKeyboardControls((state) => state[Controls.jump]);
 
+  const elapsedTime = useRef(0);
+
+
   useFrame((state, delta) => {
     if (!internalRobotRef.current || !rightArmRef.current || !leftArmRef.current || !headRef.current) return;
     
+    elapsedTime.current = state.clock.getElapsedTime();
     const groundPosition = 1.2;
 
     if (gameState === 'gameOver') {
         return;
     }
-    
-    const elapsedTime = state.clock.getElapsedTime();
+
     const initialSpeed = 8;
     const speedRamp = 0.1;
-    const speed = initialSpeed + elapsedTime * speedRamp;
+    const speed = initialSpeed + state.clock.getElapsedTime() * speedRamp;
 
     if (gameState === 'playing') {
       internalRobotRef.current.position.z -= delta * speed;
-
       if (rightPressed && moveRequest.current !== 'right') {
         moveRequest.current = 'right';
       } else if (leftPressed && moveRequest.current !== 'left') {
@@ -74,9 +76,8 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
         moveRequest.current = null;
       }
       
-      // Jump logic
       if (jumpPressed && !isJumping) {
-        if (onJump && onJump()) { // Check cooldown and count with parent
+        if (onJump && onJump()) {
             yVelocity.current = Math.sqrt(-2 * GRAVITY * JUMP_HEIGHT);
             setIsJumping(true);
         }
@@ -96,36 +97,38 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
         currentLane.current = 1;
         targetX.current = 0;
         internalRobotRef.current.position.y = groundPosition;
+        if (isJumping) {
+             internalRobotRef.current.position.y = groundPosition;
+            setIsJumping(false);
+        }
     }
     
     internalRobotRef.current.position.x = THREE.MathUtils.lerp(internalRobotRef.current.position.x, targetX.current, delta * 10);
     
+    // Animations
     if (gameState === 'playing' && !isJumping) {
-        const runCycle = Math.sin(elapsedTime * 10);
+        const runCycle = Math.sin(elapsedTime.current * 10);
         rightArmRef.current.rotation.x = runCycle * 0.8;
         leftArmRef.current.rotation.x = -runCycle * 0.8;
         internalRobotRef.current.position.y = Math.abs(runCycle) * 0.1 + groundPosition;
     } else if (isJumping) {
-        // Freeze arms in a jumping pose
         rightArmRef.current.rotation.x = -Math.PI / 4;
         leftArmRef.current.rotation.x = Math.PI / 4;
-    }
-     else { 
+    } else { // Idle / Character Select
         if (!waving) {
-          rightArmRef.current.rotation.x = Math.sin(elapsedTime * 2) * 0.2;
-          leftArmRef.current.rotation.x = -Math.sin(elapsedTime * 2) * 0.2;
+          rightArmRef.current.rotation.x = Math.sin(elapsedTime.current * 2) * 0.2;
+          leftArmRef.current.rotation.x = -Math.sin(elapsedTime.current * 2) * 0.2;
         } else {
             leftArmRef.current.rotation.x = 0;
-            rightArmRef.current.rotation.z = Math.sin(elapsedTime * 10) * 0.5 + 0.5;
+            rightArmRef.current.rotation.z = Math.sin(elapsedTime.current * 10) * 0.5 + 0.5;
             rightArmRef.current.rotation.x = -Math.PI / 2;
         }
-        
-        internalRobotRef.current.position.y = Math.sin(elapsedTime * 1.5) * 0.05 + groundPosition;
+        internalRobotRef.current.position.y = Math.sin(elapsedTime.current * 1.5) * 0.05 + groundPosition;
     }
 
     const leftEye = headRef.current.children[1] as THREE.Mesh;
     const rightEye = headRef.current.children[2] as THREE.Mesh;
-    const eyeBlink = Math.abs(Math.sin(elapsedTime * 2));
+    const eyeBlink = Math.abs(Math.sin(elapsedTime.current * 2));
     if (leftEye && rightEye) {
         (leftEye.material as THREE.MeshStandardMaterial).emissiveIntensity = eyeBlink * 4 + (hovered ? 2 : 0);
         (rightEye.material as THREE.MeshStandardMaterial).emissiveIntensity = eyeBlink * 4 + (hovered ? 2 : 0);
@@ -135,13 +138,11 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
   const handlePointerEnter = () => {
     if (gameState !== 'characterSelect') return;
     setHovered(true);
-    setWaving(true);
   };
 
   const handlePointerLeave = () => {
     if (gameState !== 'characterSelect') return;
     setHovered(false);
-    setWaving(false);
   };
   
   const handleClick = () => {
@@ -149,13 +150,14 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
     setWaving(!waving);
   }
   
-  const bodyMaterial = <meshStandardMaterial color="#EAEAEA" metalness={0.9} roughness={0.3} />;
+  const bodyMaterial = <meshStandardMaterial color="#A9A9A9" metalness={0.8} roughness={0.3} />;
+  const highlightMaterial = <meshStandardMaterial color="#0077ff" emissive="#0077ff" emissiveIntensity={2} toneMapped={false}/>
 
   return (
     <group 
         ref={internalRobotRef} 
         castShadow 
-        position={[0, 1.2, 0]}
+        position={[0, 0, 0]}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
         onClick={handleClick}
@@ -186,11 +188,11 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
         {/* Eyes */}
         <mesh position={[-0.15, 0.1, 0.35]}>
           <sphereGeometry args={[0.08, 16, 16]} />
-          <meshStandardMaterial color="red" emissive="red" emissiveIntensity={3} toneMapped={false}/>
+          {highlightMaterial}
         </mesh>
         <mesh position={[0.15, 0.1, 0.35]}>
           <sphereGeometry args={[0.08, 16, 16]} />
-          <meshStandardMaterial color="red" emissive="red" emissiveIntensity={3} toneMapped={false}/>
+          {highlightMaterial}
         </mesh>
       </group>
 
@@ -237,6 +239,10 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
             <boxGeometry args={[0.35, 0.7, 0.35]} />
             {bodyMaterial}
         </mesh>
+         <mesh castShadow position={[0, -1.05, 0.1]}>
+            <boxGeometry args={[0.35, 0.1, 0.6]} />
+            {bodyMaterial}
+        </mesh>
       </group>
       <group position={[0.25, -0.8, 0]}>
         <mesh castShadow position={[0, 0, 0]}>
@@ -247,9 +253,12 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
             <boxGeometry args={[0.35, 0.7, 0.35]} />
             {bodyMaterial}
         </mesh>
+         <mesh castShadow position={[0, -1.05, 0.1]}>
+            <boxGeometry args={[0.35, 0.1, 0.6]} />
+            {bodyMaterial}
+        </mesh>
       </group>
     </group>
   );
 });
-
-AnimatedRobot.displayName = "AnimatedRobot";
+BoyRobot.displayName = "BoyRobot";

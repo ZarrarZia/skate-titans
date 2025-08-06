@@ -1,20 +1,30 @@
+
 'use client';
 
 import * as React from 'react';
-import { AnimatedRobot } from '@/components/game/animated-robot';
-import type { GameState } from '@/app/play/page';
+import type { GameState, Character } from '@/app/play/page';
 import { useFrame } from '@react-three/fiber';
 import { useRef, useState, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { CarModel } from './car-model';
+import { BoyRobot } from './characters/boy-robot';
+import { GirlRobot } from './characters/girl-robot';
+import { RobotCat } from './characters/robot-cat';
+import { JUMP_COOLDOWN_SECONDS } from '@/app/play/page';
 
 const LANE_WIDTH = 3;
 const NUM_LANES = 3;
 const ROAD_LENGTH = 200;
-const JUMP_COOLDOWN_SECONDS = 120;
 
+function Garage({ character }: { character: Character }) {
+    const platformRef = useRef<THREE.Group>(null!);
 
-function Garage() {
+    useFrame((_, delta) => {
+        if (platformRef.current) {
+            platformRef.current.rotation.y += delta * 0.5;
+        }
+    });
+
     return (
         <group>
             <mesh receiveShadow rotation-x={-Math.PI / 2} position-y={-0.01}>
@@ -22,6 +32,9 @@ function Garage() {
                 <meshStandardMaterial color="#222222" metalness={0.8} roughness={0.3} />
             </mesh>
             <gridHelper args={[20, 20]} />
+            <group ref={platformRef}>
+                <CharacterModel selectedCharacter={character} gameState="characterSelect" />
+            </group>
         </group>
     );
 }
@@ -31,6 +44,7 @@ interface GameSceneProps {
   setGameState: (state: GameState) => void;
   setJumpState: (state: { count: number; cooldown: number }) => void;
   setScore: (score: number) => void;
+  selectedCharacter: Character;
 }
 
 let nextCarId = 0;
@@ -70,8 +84,20 @@ const RoadSegment = ({ fRef, position }: { fRef: React.Ref<THREE.Group>, positio
     </group>
 );
 
+const CharacterModel = ({ selectedCharacter, ...props }: { selectedCharacter: Character; gameState: GameState; ref?: React.Ref<THREE.Group>; onJump?: () => boolean }) => {
+  switch (selectedCharacter) {
+    case 'girl':
+      return <GirlRobot {...props} />;
+    case 'cat':
+      return <RobotCat {...props} />;
+    case 'boy':
+    default:
+      return <BoyRobot {...props} />;
+  }
+};
 
-export function GameScene({ gameState, setGameState, setJumpState, setScore }: GameSceneProps) {
+
+export function GameScene({ gameState, setGameState, setJumpState, setScore, selectedCharacter }: GameSceneProps) {
   const robotRef = useRef<THREE.Group>(null!);
   
   const carsRef = useRef<CarData[]>([]);
@@ -89,7 +115,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore }: G
   const score = useRef(0);
 
   useEffect(() => {
-    if (gameState === 'menu' || gameState === 'gameOver') {
+    if (gameState === 'characterSelect' || gameState === 'gameOver') {
       carsRef.current = [];
       if (robotRef.current) {
         robotRef.current.position.set(0, 1.2, 0);
@@ -110,10 +136,11 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore }: G
   useFrame((state, delta) => {
     if (gameState !== 'playing') {
       if (robotRef.current) {
+        const lookAtPos = new THREE.Vector3(0,2,0);
         state.camera.position.x = 0;
         state.camera.position.y = 5;
         state.camera.position.z = 10;
-        state.camera.lookAt(robotRef.current.position);
+        state.camera.lookAt(lookAtPos);
       }
       return;
     }
@@ -133,20 +160,23 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore }: G
     const speedRamp = 0.1;
     const speed = initialSpeed + elapsedTime.current * speedRamp;
     
-    if(robotRef.current) {
-      robotRef.current.position.z -= delta * speed;
-    }
+    // This is now handled by the character components themselves
+    // if(robotRef.current) {
+    //   robotRef.current.position.z -= delta * speed;
+    // }
     
     // Camera logic
-    state.camera.position.z = robotRef.current.position.z + 10;
-    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, robotRef.current.position.x, delta * 2);
-    
-    const lookAtTarget = new THREE.Vector3(
-      robotRef.current.position.x,
-      2, 
-      robotRef.current.position.z
-    );
-    state.camera.lookAt(lookAtTarget);
+    if (robotRef.current) {
+        state.camera.position.z = robotRef.current.position.z + 10;
+        state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, robotRef.current.position.x, delta * 2);
+        
+        const lookAtTarget = new THREE.Vector3(
+        robotRef.current.position.x,
+        2, 
+        robotRef.current.position.z
+        );
+        state.camera.lookAt(lookAtTarget);
+    }
 
 
     if (roadSegment1Ref.current && roadSegment1Ref.current.position.z > state.camera.position.z + ROAD_LENGTH / 2) {
@@ -175,19 +205,27 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore }: G
         });
         setIteration(i => i + 1);
     }
-
+    
     if (robotRef.current) {
-      playerBox.setFromObject(robotRef.current);
+        // We shrink the box slightly to be more forgiving
+        const playerWorldPos = new THREE.Vector3();
+        robotRef.current.getWorldPosition(playerWorldPos);
+        playerBox.setFromObject(robotRef.current);
     }
+    
 
     const activeCars: CarData[] = [];
     let scoredThisFrame = false;
     for (const car of carsRef.current) {
+        if(car.ref.current) {
+            car.ref.current.position.z += speed * delta * 1.5; // Cars move towards player
+        }
+
         if (car.position.z > state.camera.position.z + 10) {
             if (!scoredThisFrame) {
                 score.current++;
                 setScore(score.current);
-                scoredThisFrame = true; // Prevent scoring multiple times for the same group of cars passing
+                scoredThisFrame = true;
             }
             continue; 
         }
@@ -195,7 +233,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore }: G
         if (car.ref.current) {
             car.box.setFromObject(car.ref.current);
             if (playerBox.intersectsBox(car.box)) {
-                if (playerBox.min.y < car.box.max.y) {
+                if(playerBox.min.y < car.box.max.y) {
                     setGameState('gameOver');
                 }
             }
@@ -212,7 +250,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore }: G
   const handleJump = () => {
     if (jumpCount.current > 0) {
       jumpCount.current--;
-      if (jumpCooldown.current <= 0) {
+      if (jumpCooldown.current <= 0 && jumpCount.current < 2) { // Start cooldown only if it's not already running
         jumpCooldown.current = JUMP_COOLDOWN_SECONDS;
       }
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
@@ -223,10 +261,13 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore }: G
   
   return (
     <>
-      <AnimatedRobot ref={robotRef} gameState={gameState} onJump={handleJump} />
+      {gameState === 'playing' && (
+        <CharacterModel ref={robotRef} selectedCharacter={selectedCharacter} gameState={gameState} onJump={handleJump} />
+      )}
       
-      {gameState === 'menu' && <Garage />}
-      {gameState !== 'menu' && (
+      {(gameState === 'menu' || gameState === 'characterSelect') && <Garage character={selectedCharacter} />}
+      
+      {gameState !== 'menu' && gameState !== 'characterSelect' && (
         <>
             <RoadSegment fRef={roadSegment1Ref} position={[0,0,0]} />
             <RoadSegment fRef={roadSegment2Ref} position={[0,0,-ROAD_LENGTH]} />

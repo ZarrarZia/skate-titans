@@ -1,10 +1,11 @@
+
 'use client';
 
 import { Suspense, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, ArrowUp, Trophy } from 'lucide-react';
+import { Gamepad2, ArrowUp, Trophy, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 const GameCanvas = dynamic(() => import('@/components/game/game-canvas').then((mod) => mod.GameCanvas), {
@@ -12,12 +13,21 @@ const GameCanvas = dynamic(() => import('@/components/game/game-canvas').then((m
   loading: () => <Skeleton className="h-full w-full" />,
 });
 
-export type GameState = 'menu' | 'playing' | 'gameOver';
+export type GameState = 'menu' | 'playing' | 'gameOver' | 'characterSelect';
+export type Character = 'boy' | 'girl' | 'cat';
 
-const JUMP_COOLDOWN_SECONDS = 120;
+const characters: Character[] = ['boy', 'girl', 'cat'];
+const characterNames: { [key in Character]: string } = {
+  boy: 'Futuro-Bot',
+  girl: 'Cyra-Feline',
+  cat: 'Mecha-Pounce',
+};
+
+export const JUMP_COOLDOWN_SECONDS = 120;
 
 export default function PlayPage() {
-  const [gameState, setGameState] = useState<GameState>('menu');
+  const [gameState, setGameState] = useState<GameState>('characterSelect');
+  const [selectedCharacter, setSelectedCharacter] = useState<Character>('boy');
   const [jumpState, setJumpState] = useState({ count: 2, cooldown: 0 });
   const [score, setScore] = useState(0);
 
@@ -27,26 +37,54 @@ export default function PlayPage() {
   };
   
   const restartGame = () => {
-    setGameState('menu');
+    setGameState('characterSelect');
     setScore(0);
-     setTimeout(() => {
-      setGameState('playing');
-    }, 100);
   }
+
+  const handleNextCharacter = () => {
+    const currentIndex = characters.indexOf(selectedCharacter);
+    const nextIndex = (currentIndex + 1) % characters.length;
+    setSelectedCharacter(characters[nextIndex]);
+  };
+
+  const handlePrevCharacter = () => {
+    const currentIndex = characters.indexOf(selectedCharacter);
+    const prevIndex = (currentIndex - 1 + characters.length) % characters.length;
+    setSelectedCharacter(characters[prevIndex]);
+  };
+
 
   return (
     <div className="relative h-screen w-full">
       <Suspense fallback={<Skeleton className="h-full w-full" />}>
-        <GameCanvas gameState={gameState} setGameState={setGameState} setJumpState={setJumpState} setScore={setScore} />
+        <GameCanvas 
+            gameState={gameState} 
+            setGameState={setGameState} 
+            setJumpState={setJumpState} 
+            setScore={setScore} 
+            selectedCharacter={selectedCharacter}
+        />
       </Suspense>
-      {gameState === 'menu' && (
+      {gameState === 'characterSelect' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <div className="flex flex-col items-center gap-4 text-center text-white">
-            <h1 className="text-6xl font-bold text-shadow">Skate Titans</h1>
-            <p className="text-xl">Avoid the oncoming traffic to survive!</p>
-            <Button size="lg" onClick={startGame} className="mt-4 h-16 text-2xl animate-pulse">
+            <h1 className="text-6xl font-bold text-shadow">Select Your Character</h1>
+            
+            <div className="flex items-center gap-8">
+              <Button onClick={handlePrevCharacter} size="icon" variant="outline" className="h-12 w-12 rounded-full">
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+              <div className="w-64">
+                <p className="text-4xl font-bold tracking-tighter text-primary">{characterNames[selectedCharacter]}</p>
+              </div>
+              <Button onClick={handleNextCharacter} size="icon" variant="outline" className="h-12 w-12 rounded-full">
+                <ArrowRight className="h-6 w-6" />
+              </Button>
+            </div>
+
+            <Button size="lg" onClick={startGame} className="mt-8 h-16 text-2xl animate-pulse">
               <Gamepad2 className="mr-4 h-8 w-8" />
-              Start Playing
+              Start Game
             </Button>
           </div>
         </div>
