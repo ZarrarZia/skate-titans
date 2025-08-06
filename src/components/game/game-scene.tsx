@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { AnimatedRobot } from '@/components/game/animated-robot';
 import type { GameState } from '@/app/play/page';
 import { useFrame } from '@react-three/fiber';
