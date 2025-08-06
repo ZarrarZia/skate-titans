@@ -111,7 +111,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     }
 
     if (jumpCooldown.current > 0) {
-      jumpCooldown.current -= 60 * delta; // Cooldown ticks down
+      jumpCooldown.current -= 1; 
       if (jumpCooldown.current <= 0) {
         jumpCount.current = 2;
         jumpCooldown.current = 0;
@@ -188,7 +188,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
       jumpCount.current--;
       if (jumpCooldown.current <= 0) {
         // Start cooldown in frames (e.g., 120s * 60fps)
-        jumpCooldown.current = 120 * 60; 
+        jumpCooldown.current = 120; 
       }
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
       return true; // Jump is allowed
