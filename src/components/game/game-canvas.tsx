@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { PerspectiveCamera, KeyboardControls, type KeyboardControlsEntry } from '@react-three/drei';
+import { PerspectiveCamera, KeyboardControls, type KeyboardControlsEntry, OrbitControls } from '@react-three/drei';
 import { GameScene } from '@/components/game/game-scene';
 
 export enum Controls {
@@ -41,6 +41,7 @@ export function GameCanvas() {
             shadow-camera-bottom={-10}
           />
           <GameScene />
+          <OrbitControls />
         </Suspense>
       </Canvas>
     </KeyboardControls>
