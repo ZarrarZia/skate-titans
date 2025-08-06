@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { Controls } from '@/app/play/page';
+import { Controls } from '@/components/game/game-canvas';
 
 const LANE_WIDTH = 3;
 const NUM_LANES = 3;
