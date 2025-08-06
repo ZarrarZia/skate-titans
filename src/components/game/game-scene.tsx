@@ -84,17 +84,20 @@ const RoadSegment = ({ fRef, position }: { fRef: React.Ref<THREE.Group>, positio
     </group>
 );
 
-const CharacterModel = ({ selectedCharacter, ...props }: { selectedCharacter: Character; gameState: GameState; ref?: React.Ref<THREE.Group>; onJump?: () => boolean }) => {
-  switch (selectedCharacter) {
-    case 'girl':
-      return <GirlRobot {...props} />;
-    case 'cat':
-      return <RobotCat {...props} />;
-    case 'boy':
-    default:
-      return <BoyRobot {...props} />;
-  }
-};
+const CharacterModel = React.forwardRef<THREE.Group, { selectedCharacter: Character; gameState: GameState; onJump?: () => boolean }>(
+    ({ selectedCharacter, ...props }, ref) => {
+        switch (selectedCharacter) {
+            case 'girl':
+                return <GirlRobot ref={ref} {...props} />;
+            case 'cat':
+                return <RobotCat ref={ref} {...props} />;
+            case 'boy':
+            default:
+                return <BoyRobot ref={ref} {...props} />;
+        }
+    }
+);
+CharacterModel.displayName = "CharacterModel";
 
 
 export function GameScene({ gameState, setGameState, setJumpState, setScore, selectedCharacter }: GameSceneProps) {
@@ -160,10 +163,9 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     const speedRamp = 0.1;
     const speed = initialSpeed + elapsedTime.current * speedRamp;
     
-    // This is now handled by the character components themselves
-    // if(robotRef.current) {
-    //   robotRef.current.position.z -= delta * speed;
-    // }
+    if(robotRef.current) {
+      robotRef.current.position.z -= delta * speed;
+    }
     
     // Camera logic
     if (robotRef.current) {
@@ -209,9 +211,6 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     }
     
     if (robotRef.current) {
-        // We shrink the box slightly to be more forgiving
-        const playerWorldPos = new THREE.Vector3();
-        robotRef.current.getWorldPosition(playerWorldPos);
         playerBox.setFromObject(robotRef.current);
     }
     

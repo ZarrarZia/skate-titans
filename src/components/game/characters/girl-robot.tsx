@@ -50,12 +50,7 @@ export const GirlRobot = forwardRef<THREE.Group, RobotProps>(({ gameState, onJum
         return;
     }
 
-    const initialSpeed = 8.5; // Slightly faster
-    const speedRamp = 0.1;
-    const speed = initialSpeed + state.clock.getElapsedTime() * speedRamp;
-
     if (gameState === 'playing') {
-       internalRobotRef.current.position.z -= delta * speed;
       if (rightPressed && moveRequest.current !== 'right') {
         moveRequest.current = 'right';
       } else if (leftPressed && moveRequest.current !== 'left') {

@@ -51,12 +51,7 @@ export const RobotCat = forwardRef<THREE.Group, RobotProps>(({ gameState, onJump
 
     if (gameState === 'gameOver') return;
 
-    const initialSpeed = 9; // Fastest
-    const speedRamp = 0.12;
-    const speed = initialSpeed + state.clock.getElapsedTime() * speedRamp;
-
     if (gameState === 'playing') {
-      internalRobotRef.current.position.z -= delta * speed;
       if (rightPressed && moveRequest.current !== 'right') moveRequest.current = 'right';
       else if (leftPressed && moveRequest.current !== 'left') moveRequest.current = 'left';
 
