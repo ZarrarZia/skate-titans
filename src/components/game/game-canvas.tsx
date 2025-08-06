@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { PerspectiveCamera, KeyboardControls, type KeyboardControlsEntry } from '@react-three/drei';
 import { GameScene } from '@/components/game/game-scene';
 import { Color } from 'three';
+import * as THREE from 'three';
 import type { GameState } from '@/app/play/page';
 
 export enum Controls {
