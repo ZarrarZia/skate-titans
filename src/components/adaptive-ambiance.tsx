@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import * as Tone from 'tone/build/esm/index';
+import * as Tone from 'tone';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX } from 'lucide-react';
 
@@ -85,7 +85,9 @@ export function AdaptiveAmbiance() {
   };
   
   useEffect(() => {
-    Tone.Destination.mute = isMuted;
+    if (isInitialized) {
+      Tone.Destination.mute = isMuted;
+    }
   }, [isMuted, isInitialized]);
 
   return (

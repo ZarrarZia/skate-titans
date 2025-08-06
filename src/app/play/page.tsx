@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { PerspectiveCamera } from '@react-three/drei';
 import { GameScene } from '@/components/game/game-scene';
 import { KeyboardControls, KeyboardControlsEntry } from '@react-three/drei';
 
