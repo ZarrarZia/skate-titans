@@ -1,18 +1,26 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import React, { useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Controls } from '@/components/game/game-canvas';
+import type { GameState } from '@/app/play/page';
 
 const LANE_WIDTH = 3;
 const NUM_LANES = 3;
 
-export function AnimatedRobot() {
-  const robotRef = useRef<THREE.Group>(null);
-  const rightArmRef = useRef<THREE.Mesh>(null);
-  const leftArmRef = useRef<THREE.Mesh>(null);
+interface AnimatedRobotProps {
+  gameState: GameState;
+}
+
+export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ gameState }, ref) => {
+  const internalRobotRef = useRef<THREE.Group>(null!);
+  // Expose the internal ref to the parent component
+  useImperativeHandle(ref, () => internalRobotRef.current);
+
+  const rightArmRef = useRef<THREE.Group>(null);
+  const leftArmRef = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Group>(null);
 
   const [hovered, setHovered] = useState(false);
@@ -26,44 +34,69 @@ export function AnimatedRobot() {
   const rightPressed = useKeyboardControls((state) => state[Controls.right]);
 
   useFrame((state, delta) => {
-    if (!robotRef.current || !rightArmRef.current || !leftArmRef.current || !headRef.current) return;
-
-    // -- Game Controls --
-    if (rightPressed && moveRequest.current !== 'right') {
-      moveRequest.current = 'right';
-    } else if (leftPressed && moveRequest.current !== 'left') {
-      moveRequest.current = 'left';
+    if (!internalRobotRef.current || !rightArmRef.current || !leftArmRef.current || !headRef.current) return;
+    
+    // Don't run animations or controls if not in the right state
+    if (gameState === 'gameOver') {
+        // Optional: Add a 'defeated' animation
+        return;
     }
 
-    if (!rightPressed && !leftPressed && moveRequest.current) {
-      if (moveRequest.current === 'right' && currentLane.current < NUM_LANES - 1) {
-        currentLane.current++;
+    // --- Game Controls (only when playing) ---
+    if (gameState === 'playing') {
+      if (rightPressed && moveRequest.current !== 'right') {
+        moveRequest.current = 'right';
+      } else if (leftPressed && moveRequest.current !== 'left') {
+        moveRequest.current = 'left';
       }
-      if (moveRequest.current === 'left' && currentLane.current > 0) {
-        currentLane.current--;
+
+      if (!rightPressed && !leftPressed && moveRequest.current) {
+        if (moveRequest.current === 'right' && currentLane.current < NUM_LANES - 1) {
+          currentLane.current++;
+        }
+        if (moveRequest.current === 'left' && currentLane.current > 0) {
+          currentLane.current--;
+        }
+        targetX.current = (currentLane.current - 1) * LANE_WIDTH;
+        moveRequest.current = null;
       }
-      targetX.current = (currentLane.current - 1) * LANE_WIDTH;
-      moveRequest.current = null;
-    }
-
-    // Smoothly move the player to the target lane
-    robotRef.current.position.x = THREE.MathUtils.lerp(robotRef.current.position.x, targetX.current, delta * 10);
-
-    // -- Animations --
-    const elapsedTime = state.clock.getElapsedTime();
-
-    // Idle arm sway
-    if (!waving) {
-      rightArmRef.current.rotation.x = Math.sin(elapsedTime * 2) * 0.2;
-      leftArmRef.current.rotation.x = -Math.sin(elapsedTime * 2) * 0.2;
     } else {
-        // Waving animation
-        leftArmRef.current.rotation.x = 0;
-        rightArmRef.current.rotation.z = Math.sin(elapsedTime * 10) * 0.5 + 0.5;
-        rightArmRef.current.rotation.x = -Math.PI / 2;
+        // Reset lane and position in menu
+        currentLane.current = 1;
+        targetX.current = 0;
+    }
+    
+    // Smoothly move the player to the target lane
+    internalRobotRef.current.position.x = THREE.MathUtils.lerp(internalRobotRef.current.position.x, targetX.current, delta * 10);
+    
+
+    // --- Animations ---
+    const elapsedTime = state.clock.getElapsedTime();
+    
+    if (gameState === 'playing') {
+        // Running animation
+        const runCycle = Math.sin(elapsedTime * 10);
+        rightArmRef.current.rotation.x = runCycle * 0.8;
+        leftArmRef.current.rotation.x = -runCycle * 0.8;
+        internalRobotRef.current.position.y = Math.abs(runCycle) * 0.1 + 1.2;
+    } else { // Menu idle animation
+        // Idle arm sway
+        if (!waving) {
+          rightArmRef.current.rotation.x = Math.sin(elapsedTime * 2) * 0.2;
+          leftArmRef.current.rotation.x = -Math.sin(elapsedTime * 2) * 0.2;
+        } else {
+            // Waving animation
+            leftArmRef.current.rotation.x = 0;
+            rightArmRef.current.rotation.z = Math.sin(elapsedTime * 10) * 0.5 + 0.5;
+            rightArmRef.current.rotation.x = -Math.PI / 2;
+        }
+        
+        // Slight body bob
+        internalRobotRef.current.position.y = Math.sin(elapsedTime * 1.5) * 0.05 + 1.2;
     }
 
-    // Eye blinking
+
+    // Eye blinking (applies in all states)
     const leftEye = headRef.current.children[1] as THREE.Mesh;
     const rightEye = headRef.current.children[2] as THREE.Mesh;
     const eyeBlink = Math.abs(Math.sin(elapsedTime * 2));
@@ -71,31 +104,35 @@ export function AnimatedRobot() {
         (leftEye.material as THREE.MeshStandardMaterial).emissiveIntensity = eyeBlink * 4 + (hovered ? 2 : 0);
         (rightEye.material as THREE.MeshStandardMaterial).emissiveIntensity = eyeBlink * 4 + (hovered ? 2 : 0);
     }
-    
-    // Slight body bob
-    robotRef.current.position.y = Math.sin(elapsedTime * 1.5) * 0.05 + 1.2;
   });
 
   const handlePointerEnter = () => {
+    if (gameState !== 'menu') return;
     setHovered(true);
     setWaving(true);
   };
 
   const handlePointerLeave = () => {
+    if (gameState !== 'menu') return;
     setHovered(false);
     setWaving(false);
   };
+  
+  const handleClick = () => {
+    if (gameState !== 'menu') return;
+    setWaving(!waving);
+  }
   
   const bodyMaterial = <meshStandardMaterial color="#EAEAEA" metalness={0.9} roughness={0.3} />;
 
   return (
     <group 
-        ref={robotRef} 
+        ref={internalRobotRef} 
         castShadow 
         position={[0, 1.2, 0]}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
-        onClick={() => setWaving(!waving)}
+        onClick={handleClick}
         scale={1.2}
     >
       {/* Torso */}
@@ -187,4 +224,6 @@ export function AnimatedRobot() {
       </group>
     </group>
   );
-}
+});
+
+AnimatedRobot.displayName = "AnimatedRobot";

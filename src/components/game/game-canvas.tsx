@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { PerspectiveCamera, KeyboardControls, type KeyboardControlsEntry, OrbitControls } from '@react-three/drei';
 import { GameScene } from '@/components/game/game-scene';
 import { Color } from 'three';
+import type { GameState } from '@/app/play/page';
 
 export enum Controls {
   left = 'left',
@@ -14,7 +15,12 @@ export enum Controls {
   jump = 'jump',
 }
 
-export function GameCanvas() {
+interface GameCanvasProps {
+  gameState: GameState;
+  setGameState: (state: GameState) => void;
+}
+
+export function GameCanvas({ gameState, setGameState }: GameCanvasProps) {
   const map: KeyboardControlsEntry<Controls>[] = [
     { name: Controls.left, keys: ['ArrowLeft', 'a', 'A'] },
     { name: Controls.right, keys: ['ArrowRight', 'd', 'D'] },
@@ -29,23 +35,23 @@ export function GameCanvas() {
         scene.background = new Color('#111');
       }}>
         <Suspense fallback={null}>
-          <PerspectiveCamera makeDefault position={[0, 4, 8]} fov={60} />
-          <ambientLight intensity={0.7} />
+          <PerspectiveCamera makeDefault position={[0, 5, 10]} fov={60} />
+          <ambientLight intensity={0.8} />
           <directionalLight
             castShadow
-            position={[5, 10, 7]}
-            intensity={2.5}
+            position={[10, 20, 15]}
+            intensity={2.0}
             shadow-mapSize-width={2048}
             shadow-mapSize-height={2048}
             shadow-camera-far={50}
-            shadow-camera-left={-15}
-            shadow-camera-right={15}
-            shadow-camera-top={15}
-            shadow-camera-bottom={-15}
+            shadow-camera-left={-20}
+            shadow-camera-right={20}
+            shadow-camera-top={20}
+            shadow-camera-bottom={-20}
           />
-           <pointLight position={[-5, 5, -5]} intensity={1} color="white" />
-          <GameScene />
-          <OrbitControls />
+           <pointLight position={[-10, 5, -10]} intensity={1} color="white" />
+          <GameScene gameState={gameState} setGameState={setGameState} />
+          {gameState === 'menu' && <OrbitControls />}
         </Suspense>
       </Canvas>
     </KeyboardControls>
