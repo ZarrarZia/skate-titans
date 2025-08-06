@@ -1,25 +1,22 @@
-'use client';
-
-import { usePathname } from 'next/navigation';
+import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/toaster';
-import { Header } from '@/components/layout/header';
-import { Footer } from '@/components/layout/footer';
 import { AdaptiveAmbiance } from '@/components/adaptive-ambiance';
+import { LayoutProvider } from '@/components/layout-provider';
 import './globals.css';
+
+export const metadata: Metadata = {
+  title: 'Skate Titans - The Ultimate Endless Runner',
+  description: 'Download Skate Titans and join the endless running adventure!',
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
-  const isGamePage = pathname === '/play';
-
   return (
     <html lang="en" className="dark">
       <head>
-        <title>Skate Titans - The Ultimate Endless Runner</title>
-        <meta name="description" content="Download Skate Titans and join the endless running adventure!" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -35,11 +32,7 @@ export default function RootLayout({
         >
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
         </div>
-        <div className="relative flex min-h-screen flex-col">
-          {!isGamePage && <Header />}
-          <main className="flex-1">{children}</main>
-          {!isGamePage && <Footer />}
-        </div>
+        <LayoutProvider>{children}</LayoutProvider>
         <Toaster />
         <AdaptiveAmbiance />
       </body>
