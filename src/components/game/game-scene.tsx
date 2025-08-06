@@ -159,13 +159,12 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
     }
     
-    const initialSpeed = 8;
-    const speedRamp = 0.1;
+    const initialSpeed = 10;
+    const speedRamp = 0.15;
     const speed = initialSpeed + elapsedTime.current * speedRamp;
     
-    if(robotRef.current) {
-      robotRef.current.position.z -= delta * speed;
-    }
+    if (roadSegment1Ref.current) roadSegment1Ref.current.position.z += delta * speed;
+    if (roadSegment2Ref.current) roadSegment2Ref.current.position.z += delta * speed;
     
     // Camera logic
     if (robotRef.current) {
@@ -181,21 +180,21 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     }
 
 
-    if (roadSegment1Ref.current && roadSegment1Ref.current.position.z > state.camera.position.z + ROAD_LENGTH / 2) {
+    if (roadSegment1Ref.current && roadSegment1Ref.current.position.z > robotRef.current.position.z + ROAD_LENGTH) {
       roadSegment1Ref.current.position.z -= ROAD_LENGTH * 2;
     }
-    if (roadSegment2Ref.current && roadSegment2Ref.current.position.z > state.camera.position.z + ROAD_LENGTH / 2) {
+    if (roadSegment2Ref.current && roadSegment2Ref.current.position.z > robotRef.current.position.z + ROAD_LENGTH) {
       roadSegment2Ref.current.position.z -= ROAD_LENGTH * 2;
     }
 
     spawnTimer.current -= delta;
     const initialSpawnRate = 2.0;
-    const minSpawnRate = 0.5;
+    const minSpawnRate = 0.4;
     const spawnRateRamp = 0.02;
     const currentSpawnRate = Math.max(minSpawnRate, initialSpawnRate - elapsedTime.current * spawnRateRamp);
 
     if (spawnTimer.current <= 0) { 
-        spawnTimer.current = currentSpawnRate + (Math.random() - 0.5) * 0.8;
+        spawnTimer.current = currentSpawnRate + (Math.random() - 0.5) * 0.4;
         const lane = Math.floor(Math.random() * NUM_LANES);
         const laneX = (lane - 1) * LANE_WIDTH;
         
@@ -219,10 +218,10 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     let scoredThisFrame = false;
     for (const car of carsRef.current) {
         if(car.ref.current) {
-            car.ref.current.position.z += speed * delta * 1.5; // Cars move towards player
+            // Cars move towards player, now handled by being static on moving road
         }
 
-        if (car.position.z > state.camera.position.z + 10) {
+        if (car.position.z > robotRef.current.position.z + 10) {
             if (!scoredThisFrame) {
                 score.current++;
                 setScore(score.current);
@@ -251,7 +250,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
   const handleJump = () => {
     if (jumpCount.current > 0) {
       jumpCount.current--;
-      if (jumpCooldown.current <= 0 && jumpCount.current < 2) { // Start cooldown only if it's not already running
+      if (jumpCooldown.current <= 0 && jumpCount.current < 2) { 
         jumpCooldown.current = JUMP_COOLDOWN_SECONDS;
       }
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
