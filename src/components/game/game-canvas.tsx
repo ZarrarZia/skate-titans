@@ -34,7 +34,7 @@ export function GameCanvas({ gameState, setGameState }: GameCanvasProps) {
     <KeyboardControls map={map}>
       <Canvas shadows onCreated={({ scene }) => {
         scene.background = new Color('#111');
-        scene.fog = new THREE.Fog('black', 10, 40);
+        scene.fog = new THREE.Fog('black', 10, 50);
       }}>
         <Suspense fallback={null}>
           <PerspectiveCamera makeDefault position={[0, 5, 10]} fov={60} />

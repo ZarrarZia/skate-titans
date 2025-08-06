@@ -19,6 +19,13 @@ export default function PlayPage() {
   const startGame = () => {
     setGameState('playing');
   };
+  
+  const restartGame = () => {
+    setGameState('menu');
+     setTimeout(() => {
+      setGameState('playing');
+    }, 100);
+  }
 
   return (
     <div className="relative h-[calc(100vh-4rem)] w-full">
@@ -41,7 +48,7 @@ export default function PlayPage() {
         <div className="absolute inset-0 flex items-center justify-center bg-black/70">
           <div className="flex flex-col items-center gap-4 text-center text-white">
             <h1 className="text-7xl font-bold text-red-500 text-shadow">Game Over</h1>
-            <Button size="lg" onClick={startGame} className="mt-4 h-16 text-2xl">
+            <Button size="lg" onClick={restartGame} className="mt-4 h-16 text-2xl">
               Play Again
             </Button>
           </div>
