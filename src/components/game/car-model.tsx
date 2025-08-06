@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useRef } from 'react';
 import * as THREE from 'three';
 
 // Utility: get a random item from an array
