@@ -1,14 +1,10 @@
-import type { Metadata } from 'next';
+'use client';
+
 import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { AdaptiveAmbiance } from '@/components/adaptive-ambiance';
 import './globals.css';
-
-export const metadata: Metadata = {
-  title: 'Skate Titans - The Ultimate Endless Runner',
-  description: 'Download Skate Titans and join the endless running adventure!',
-};
 
 export default function RootLayout({
   children,
@@ -18,6 +14,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        <title>Skate Titans - The Ultimate Endless Runner</title>
+        <meta name="description" content="Download Skate Titans and join the endless running adventure!" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
