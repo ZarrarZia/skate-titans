@@ -15,6 +15,8 @@ import { JUMP_COOLDOWN_SECONDS } from '@/app/play/page';
 const LANE_WIDTH = 3;
 const NUM_LANES = 3;
 const ROAD_LENGTH = 200;
+const SPAWN_DISTANCE = 150;
+
 
 function Garage({ character }: { character: Character }) {
     const platformRef = useRef<THREE.Group>(null!);
@@ -116,6 +118,8 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
   const jumpCount = useRef(2);
   const jumpCooldown = useRef(0);
   const score = useRef(0);
+  const gameSpeed = useRef(15);
+
 
   useEffect(() => {
     if (gameState === 'characterSelect' || gameState === 'gameOver') {
@@ -129,6 +133,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       jumpCooldown.current = 0;
       elapsedTime.current = 0;
       score.current = 0;
+      gameSpeed.current = 15;
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
       setScore(score.current);
       setIteration(i => i + 1);
@@ -147,8 +152,15 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       }
       return;
     }
+    
+    if (!robotRef.current) return;
 
     elapsedTime.current += delta;
+    
+    // Speed increases over time
+    gameSpeed.current += delta * 0.2;
+
+    robotRef.current.position.z -= delta * gameSpeed.current;
 
     if (jumpCooldown.current > 0) {
       jumpCooldown.current -= delta;
@@ -159,74 +171,62 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
     }
     
-    const initialSpeed = 12;
-    const speedRamp = 0.2;
-    const speed = initialSpeed + elapsedTime.current * speedRamp;
     
-    if (roadSegment1Ref.current) roadSegment1Ref.current.position.z += delta * speed;
-    if (roadSegment2Ref.current) roadSegment2Ref.current.position.z += delta * speed;
+    if (roadSegment1Ref.current) roadSegment1Ref.current.position.z = (robotRef.current.position.z % (ROAD_LENGTH * 2)) + ROAD_LENGTH;
+    if (roadSegment2Ref.current) roadSegment2Ref.current.position.z = (robotRef.current.position.z % (ROAD_LENGTH * 2));
     
-    if (robotRef.current) {
-        state.camera.position.z = robotRef.current.position.z + 10;
-        state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, robotRef.current.position.x, delta * 2);
-        
-        const lookAtTarget = new THREE.Vector3(
-        robotRef.current.position.x,
-        2, 
-        robotRef.current.position.z
-        );
-        state.camera.lookAt(lookAtTarget);
-    }
+    
+    state.camera.position.z = robotRef.current.position.z + 10;
+    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, robotRef.current.position.x, delta * 2);
+    
+    const lookAtTarget = new THREE.Vector3(
+    robotRef.current.position.x,
+    2, 
+    robotRef.current.position.z
+    );
+    state.camera.lookAt(lookAtTarget);
 
-
-    if (roadSegment1Ref.current && roadSegment1Ref.current.position.z > robotRef.current.position.z + ROAD_LENGTH) {
-      roadSegment1Ref.current.position.z -= ROAD_LENGTH * 2;
-    }
-    if (roadSegment2Ref.current && roadSegment2Ref.current.position.z > robotRef.current.position.z + ROAD_LENGTH) {
-      roadSegment2Ref.current.position.z -= ROAD_LENGTH * 2;
-    }
 
     spawnTimer.current -= delta;
-    const initialSpawnRate = 1.5;
-    const minSpawnRate = 0.3;
-    const spawnRateRamp = 0.03;
+    const initialSpawnRate = 1.2;
+    const minSpawnRate = 0.4;
+    const spawnRateRamp = 0.02;
     const currentSpawnRate = Math.max(minSpawnRate, initialSpawnRate - elapsedTime.current * spawnRateRamp);
 
     if (spawnTimer.current <= 0) { 
-        spawnTimer.current = currentSpawnRate + (Math.random() - 0.5) * 0.4;
+        spawnTimer.current = currentSpawnRate;
         const lane = Math.floor(Math.random() * NUM_LANES);
         const laneX = (lane - 1) * LANE_WIDTH;
         
-        if (robotRef.current) {
-          carsRef.current.push({
-              id: nextCarId++,
-              position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - (ROAD_LENGTH - 10)),
-              ref: React.createRef<THREE.Group>(),
-              box: new THREE.Box3(),
-          });
-          setIteration(i => i + 1);
-        }
+        carsRef.current.push({
+            id: nextCarId++,
+            position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - SPAWN_DISTANCE),
+            ref: React.createRef<THREE.Group>(),
+            box: new THREE.Box3(),
+        });
+        setIteration(i => i + 1);
     }
     
-    if (robotRef.current) {
-        playerBox.setFromObject(robotRef.current);
-    }
+    playerBox.setFromObject(robotRef.current);
+    const playerHeight = playerBox.max.y - playerBox.min.y;
+    playerBox.min.y += playerHeight * 0.2; // Making the hitbox smaller to avoid unfair collisions
+    playerBox.max.y -= playerHeight * 0.2;
     
     const activeCars: CarData[] = [];
-    let scoredThisFrame = false;
     for (const car of carsRef.current) {
-        if (car.position.z > robotRef.current.position.z + 10) {
-            if (!scoredThisFrame) {
-                score.current++;
-                setScore(score.current);
-                scoredThisFrame = true;
-            }
+        // Move car towards player
+        car.position.z += delta * gameSpeed.current * 1.5;
+
+        // Cleanup cars that are behind the player
+        if (car.position.z > robotRef.current.position.z + 20) {
+            score.current++;
+            setScore(score.current);
             continue; 
         }
 
         if (car.ref.current) {
             car.box.setFromObject(car.ref.current);
-            if (playerBox.intersectsBox(car.box)) {
+             if (playerBox.intersectsBox(car.box)) {
                 if(playerBox.min.y < car.box.max.y) {
                     setGameState('gameOver');
                 }
@@ -255,9 +255,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
   
   return (
     <>
-      {gameState === 'playing' && (
-        <CharacterModel ref={robotRef} selectedCharacter={selectedCharacter} gameState={gameState} onJump={handleJump} />
-      )}
+      <CharacterModel ref={robotRef} selectedCharacter={selectedCharacter} gameState={gameState} onJump={handleJump} />
       
       {(gameState === 'menu' || gameState === 'characterSelect') && <Garage character={selectedCharacter} />}
       
@@ -274,5 +272,3 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     </>
   );
 }
-
-  
