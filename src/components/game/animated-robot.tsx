@@ -13,7 +13,7 @@ export function AnimatedRobot() {
   const robotRef = useRef<THREE.Group>(null);
   const rightArmRef = useRef<THREE.Mesh>(null);
   const leftArmRef = useRef<THREE.Mesh>(null);
-  const headRef = useRef<THREE.Mesh>(null);
+  const headRef = useRef<THREE.Group>(null);
 
   const [hovered, setHovered] = useState(false);
   const [waving, setWaving] = useState(false);
@@ -64,13 +64,16 @@ export function AnimatedRobot() {
     }
 
     // Eye blinking
-    const eyeLid = headRef.current.children[2] as THREE.Mesh;
-    const eyeBlink = Math.max(0, Math.sin(elapsedTime * 2 + 3) - 0.95) * 10;
-    eyeLid.scale.set(1, eyeBlink, 1);
+    const leftEye = headRef.current.children[1] as THREE.Mesh;
+    const rightEye = headRef.current.children[2] as THREE.Mesh;
+    const eyeBlink = Math.abs(Math.sin(elapsedTime * 2));
+    if (leftEye && rightEye) {
+        (leftEye.material as THREE.MeshStandardMaterial).emissiveIntensity = eyeBlink * 4 + (hovered ? 2 : 0);
+        (rightEye.material as THREE.MeshStandardMaterial).emissiveIntensity = eyeBlink * 4 + (hovered ? 2 : 0);
+    }
     
     // Slight body bob
-    robotRef.current.position.y = Math.sin(elapsedTime * 1.5) * 0.05 + 1;
-
+    robotRef.current.position.y = Math.sin(elapsedTime * 1.5) * 0.05 + 1.2;
   });
 
   const handlePointerEnter = () => {
@@ -83,62 +86,105 @@ export function AnimatedRobot() {
     setWaving(false);
   };
   
+  const bodyMaterial = <meshStandardMaterial color="#333" metalness={0.9} roughness={0.3} />;
+
   return (
     <group 
         ref={robotRef} 
         castShadow 
-        position={[0, 1, 0]}
+        position={[0, 1.2, 0]}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
         onClick={() => setWaving(!waving)}
+        scale={1.2}
     >
-      {/* Body */}
-      <mesh castShadow position={[0, 0.5, 0]}>
-        <cylinderGeometry args={[0.5, 0.5, 1, 32]} />
-        <meshStandardMaterial color="gray" metalness={0.8} roughness={0.2} />
+      {/* Torso */}
+      <mesh castShadow position={[0, 0.4, 0]}>
+        <boxGeometry args={[1, 1, 0.6]} />
+        {bodyMaterial}
       </mesh>
-       <mesh castShadow position={[0, 0, 0]}>
-        <cylinderGeometry args={[0.3, 0.3, 0.2, 32]} />
-        <meshStandardMaterial color="#444" metalness={0.8} roughness={0.2} />
+      {/* Abdomen */}
+      <mesh castShadow position={[0, -0.2, 0]}>
+        <boxGeometry args={[0.7, 0.4, 0.5]} />
+        {bodyMaterial}
       </mesh>
-
+       {/* Hips */}
+       <mesh castShadow position={[0, -0.5, 0]}>
+        <boxGeometry args={[0.8, 0.2, 0.55]} />
+        {bodyMaterial}
+      </mesh>
 
       {/* Head */}
-      <group ref={headRef} position={[0, 1.3, 0]}>
+      <group ref={headRef} position={[0, 1.1, 0]}>
         <mesh castShadow>
           <sphereGeometry args={[0.4, 32, 32]} />
-          <meshStandardMaterial color="#555" metalness={0.6} roughness={0.3} />
+          {bodyMaterial}
         </mesh>
         {/* Eyes */}
         <mesh position={[-0.15, 0.1, 0.35]}>
-          <sphereGeometry args={[0.07, 16, 16]} />
-          <meshStandardMaterial color="aqua" emissive="blue" emissiveIntensity={hovered ? 5 : 2} />
+          <sphereGeometry args={[0.08, 16, 16]} />
+          <meshStandardMaterial color="aqua" emissive="aqua" emissiveIntensity={3} toneMapped={false}/>
         </mesh>
         <mesh position={[0.15, 0.1, 0.35]}>
-          <sphereGeometry args={[0.07, 16, 16]} />
-          <meshStandardMaterial color="aqua" emissive="blue" emissiveIntensity={hovered ? 5 : 2} />
+          <sphereGeometry args={[0.08, 16, 16]} />
+          <meshStandardMaterial color="aqua" emissive="aqua" emissiveIntensity={3} toneMapped={false}/>
         </mesh>
       </group>
 
+      {/* Shoulders */}
+       <mesh castShadow position={[-0.6, 0.75, 0]}>
+        <sphereGeometry args={[0.2, 16, 16]} />
+        {bodyMaterial}
+      </mesh>
+       <mesh castShadow position={[0.6, 0.75, 0]}>
+        <sphereGeometry args={[0.2, 16, 16]} />
+        {bodyMaterial}
+      </mesh>
+
       {/* Arms */}
-      <mesh ref={leftArmRef} castShadow position={[-0.6, 0.8, 0]} rotation={[0,0,0.2]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color="#666" metalness={0.8} roughness={0.2} />
-      </mesh>
-      <mesh ref={rightArmRef} castShadow position={[0.6, 0.8, 0]} rotation={[0,0,-0.2]}>
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color="#666" metalness={0.8} roughness={0.2} />
-      </mesh>
+      <group ref={leftArmRef} position={[-0.6, 0.2, 0]}>
+         <mesh castShadow position={[0, 0, 0]}>
+            <boxGeometry args={[0.3, 0.8, 0.3]} />
+            {bodyMaterial}
+        </mesh>
+        <mesh castShadow position={[0, -0.6, 0]}>
+            <boxGeometry args={[0.25, 0.5, 0.25]} />
+            {bodyMaterial}
+        </mesh>
+      </group>
+      
+      <group ref={rightArmRef} position={[0.6, 0.2, 0]}>
+         <mesh castShadow position={[0, 0, 0]}>
+            <boxGeometry args={[0.3, 0.8, 0.3]} />
+            {bodyMaterial}
+        </mesh>
+        <mesh castShadow position={[0, -0.6, 0]}>
+            <boxGeometry args={[0.25, 0.5, 0.25]} />
+            {bodyMaterial}
+        </mesh>
+      </group>
       
        {/* Legs */}
-      <mesh castShadow position={[-0.2, -0.6, 0]}>
-        <boxGeometry args={[0.25, 1.2, 0.25]} />
-        <meshStandardMaterial color="#666" metalness={0.8} roughness={0.2} />
-      </mesh>
-      <mesh castShadow position={[0.2, -0.6, 0]}>
-        <boxGeometry args={[0.25, 1.2, 0.25]} />
-        <meshStandardMaterial color="#666" metalness={0.8} roughness={0.2} />
-      </mesh>
+      <group position={[-0.25, -0.8, 0]}>
+        <mesh castShadow position={[0, 0, 0]}>
+            <boxGeometry args={[0.4, 0.6, 0.4]} />
+            {bodyMaterial}
+        </mesh>
+        <mesh castShadow position={[0, -0.65, 0]}>
+            <boxGeometry args={[0.35, 0.7, 0.35]} />
+            {bodyMaterial}
+        </mesh>
+      </group>
+      <group position={[0.25, -0.8, 0]}>
+        <mesh castShadow position={[0, 0, 0]}>
+            <boxGeometry args={[0.4, 0.6, 0.4]} />
+            {bodyMaterial}
+        </mesh>
+        <mesh castShadow position={[0, -0.65, 0]}>
+            <boxGeometry args={[0.35, 0.7, 0.35]} />
+            {bodyMaterial}
+        </mesh>
+      </group>
     </group>
   );
 }
