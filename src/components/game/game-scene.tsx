@@ -159,14 +159,13 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
     }
     
-    const initialSpeed = 10;
-    const speedRamp = 0.15;
+    const initialSpeed = 12;
+    const speedRamp = 0.2;
     const speed = initialSpeed + elapsedTime.current * speedRamp;
     
     if (roadSegment1Ref.current) roadSegment1Ref.current.position.z += delta * speed;
     if (roadSegment2Ref.current) roadSegment2Ref.current.position.z += delta * speed;
     
-    // Camera logic
     if (robotRef.current) {
         state.camera.position.z = robotRef.current.position.z + 10;
         state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, robotRef.current.position.x, delta * 2);
@@ -188,9 +187,9 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     }
 
     spawnTimer.current -= delta;
-    const initialSpawnRate = 2.0;
-    const minSpawnRate = 0.4;
-    const spawnRateRamp = 0.02;
+    const initialSpawnRate = 1.5;
+    const minSpawnRate = 0.3;
+    const spawnRateRamp = 0.03;
     const currentSpawnRate = Math.max(minSpawnRate, initialSpawnRate - elapsedTime.current * spawnRateRamp);
 
     if (spawnTimer.current <= 0) { 
@@ -201,7 +200,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
         if (robotRef.current) {
           carsRef.current.push({
               id: nextCarId++,
-              position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - 150),
+              position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - (ROAD_LENGTH - 10)),
               ref: React.createRef<THREE.Group>(),
               box: new THREE.Box3(),
           });
@@ -213,14 +212,9 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
         playerBox.setFromObject(robotRef.current);
     }
     
-
     const activeCars: CarData[] = [];
     let scoredThisFrame = false;
     for (const car of carsRef.current) {
-        if(car.ref.current) {
-            // Cars move towards player, now handled by being static on moving road
-        }
-
         if (car.position.z > robotRef.current.position.z + 10) {
             if (!scoredThisFrame) {
                 score.current++;
@@ -280,3 +274,5 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     </>
   );
 }
+
+  
