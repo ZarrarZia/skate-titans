@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Bot, X } from 'lucide-react';
+import { Menu, Bot, X, Gamepad2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -27,7 +27,7 @@ export function Header() {
           <span className="text-2xl font-bold tracking-tighter text-shadow-sm">Skate Titans</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-4 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -43,6 +43,12 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <Link href="/play">
+            <Button variant="secondary" className="group">
+              <Gamepad2 className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
+              Play Game
+            </Button>
+          </Link>
           <Link href="/login">
             <Button variant="ghost">Login</Button>
           </Link>
@@ -60,6 +66,16 @@ export function Header() {
           </SheetTrigger>
           <SheetContent side="right" className="w-[300px] sm:w-[400px]">
             <nav className="mt-8 flex flex-col gap-6">
+               <Link
+                  href="/play"
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    'text-2xl font-medium transition-colors hover:text-primary',
+                    pathname === '/play' ? 'text-primary' : 'text-foreground'
+                  )}
+                >
+                  Play Game
+                </Link>
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
