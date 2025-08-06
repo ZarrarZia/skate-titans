@@ -14,6 +14,8 @@ const GameCanvas = dynamic(() => import('@/components/game/game-canvas').then((m
 
 export type GameState = 'menu' | 'playing' | 'gameOver';
 
+const JUMP_COOLDOWN_SECONDS = 120;
+
 export default function PlayPage() {
   const [gameState, setGameState] = useState<GameState>('menu');
   const [jumpState, setJumpState] = useState({ count: 2, cooldown: 0 });
@@ -30,7 +32,7 @@ export default function PlayPage() {
   }
 
   return (
-    <div className="relative h-[calc(100vh-4rem)] w-full">
+    <div className="relative h-screen w-full">
       <Suspense fallback={<Skeleton className="h-full w-full" />}>
         <GameCanvas gameState={gameState} setGameState={setGameState} setJumpState={setJumpState} />
       </Suspense>
@@ -66,7 +68,7 @@ export default function PlayPage() {
           {jumpState.cooldown > 0 && (
             <div className="mt-2">
               <p className="text-xs">Cooldown:</p>
-              <Progress value={(1 - jumpState.cooldown / 120) * 100} className="h-2" />
+              <Progress value={(1 - jumpState.cooldown / JUMP_COOLDOWN_SECONDS) * 100} className="h-2" />
             </div>
           )}
         </div>

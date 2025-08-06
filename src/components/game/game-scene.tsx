@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -12,6 +11,8 @@ import { CarModel } from './car-model';
 const LANE_WIDTH = 3;
 const NUM_LANES = 3;
 const ROAD_LENGTH = 200;
+const JUMP_COOLDOWN_SECONDS = 120;
+
 
 function Garage() {
     return (
@@ -116,7 +117,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     elapsedTime.current += delta;
 
     if (jumpCooldown.current > 0) {
-      jumpCooldown.current -= 1; 
+      jumpCooldown.current -= delta;
       if (jumpCooldown.current < 0) { 
         jumpCount.current = 2;
         jumpCooldown.current = 0;
@@ -124,8 +125,8 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
     }
     
-    const initialSpeed = 6;
-    const speedRamp = 0.15;
+    const initialSpeed = 8;
+    const speedRamp = 0.1;
     const speed = initialSpeed + elapsedTime.current * speedRamp;
     
     if(robotRef.current) {
@@ -153,7 +154,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
 
     spawnTimer.current -= delta;
     const initialSpawnRate = 2.0;
-    const minSpawnRate = 1.0;
+    const minSpawnRate = 0.5;
     const spawnRateRamp = 0.02;
     const currentSpawnRate = Math.max(minSpawnRate, initialSpawnRate - elapsedTime.current * spawnRateRamp);
 
@@ -164,7 +165,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
         
         carsRef.current.push({
             id: nextCarId++,
-            position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - 80),
+            position: new THREE.Vector3(laneX, 0, robotRef.current.position.z - 150),
             ref: React.createRef<THREE.Group>(),
             box: new THREE.Box3(),
         });
@@ -202,7 +203,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     if (jumpCount.current > 0) {
       jumpCount.current--;
       if (jumpCooldown.current <= 0) {
-        jumpCooldown.current = 120; // 120 frames cooldown (approx 2 seconds at 60fps)
+        jumpCooldown.current = JUMP_COOLDOWN_SECONDS;
       }
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
       return true;
