@@ -43,7 +43,7 @@ function Garage({ character }: { character: Character }) {
 
 interface GameSceneProps {
   gameState: GameState;
-  setGameState: (state: GameState) => void;
+  setGameState: (score: number) => void;
   setJumpState: (state: { count: number; cooldown: number }) => void;
   setScore: (score: number) => void;
   selectedCharacter: Character;
@@ -109,7 +109,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
   
   const [cars, setCars] = useState<CarData[]>([]);
 
-  const spawnTimer = useRef(2.5);
+  const spawnTimer = useRef(1.2);
   const playerBox = useMemo(() => new THREE.Box3(), []);
   const elapsedTime = useRef(0);
 
@@ -120,6 +120,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
   const jumpCooldown = useRef(0);
   const score = useRef(0);
   const gameSpeed = useRef(15);
+  const lastScoreSpeedBoost = useRef(0);
 
 
   useEffect(() => {
@@ -135,6 +136,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       elapsedTime.current = 0;
       score.current = 0;
       gameSpeed.current = 15;
+      lastScoreSpeedBoost.current = 0;
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
       setScore(score.current);
     }
@@ -152,7 +154,11 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     
     elapsedTime.current += delta;
     
-    gameSpeed.current += delta * 0.2;
+    // Speed increase based on score
+    if (score.current > 0 && score.current % 30 === 0 && score.current !== lastScoreSpeedBoost.current) {
+        gameSpeed.current += 2;
+        lastScoreSpeedBoost.current = score.current;
+    }
 
     robotRef.current.position.z -= delta * gameSpeed.current;
 
@@ -167,12 +173,12 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
     
     
     if (roadSegment1Ref.current) {
-        if (roadSegment1Ref.current.position.z > robotRef.current.position.z + ROAD_LENGTH) {
+        if (roadSegment1Ref.current.position.z > robotRef.current.position.z + ROAD_LENGTH / 2) {
             roadSegment1Ref.current.position.z -= ROAD_LENGTH * 2;
         }
     }
     if (roadSegment2Ref.current) {
-        if (roadSegment2Ref.current.position.z > robotRef.current.position.z + ROAD_LENGTH) {
+        if (roadSegment2Ref.current.position.z > robotRef.current.position.z + ROAD_LENGTH / 2) {
             roadSegment2Ref.current.position.z -= ROAD_LENGTH * 2;
         }
     }
@@ -216,8 +222,11 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
         const activeCars: CarData[] = [];
         for (const car of prevCars) {
             if (car.position.z > robotRef.current.position.z + 20) {
-                score.current++;
-                setScore(score.current);
+                if (!prevCars.find(c => c.id === car.id)?.ref.current?.userData.passed) {
+                    score.current++;
+                    setScore(score.current);
+                    if(car.ref.current) car.ref.current.userData.passed = true;
+                }
                 continue; 
             }
 
@@ -225,7 +234,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
                 car.box.setFromObject(car.ref.current);
                  if (playerBox.intersectsBox(car.box)) {
                     if(playerBox.min.y < car.box.max.y) {
-                        setGameState('gameOver');
+                        setGameState(score.current);
                     }
                 }
             }
@@ -249,9 +258,9 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
   
   return (
     <>
-      {gameState === 'characterSelect' && <Garage character={selectedCharacter} />}
-      
-      {gameState === 'playing' && (
+      {gameState === 'characterSelect' ? (
+         <Garage character={selectedCharacter} />
+      ) : (
         <>
             <CharacterModel ref={robotRef} selectedCharacter={selectedCharacter} gameState={gameState} onJump={handleJump} />
             <RoadSegment ref={roadSegment1Ref} position={[0,0,0]} />

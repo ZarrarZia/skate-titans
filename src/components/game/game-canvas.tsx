@@ -19,7 +19,7 @@ export enum Controls {
 
 interface GameCanvasProps {
   gameState: GameState;
-  setGameState: (state: GameState) => void;
+  setGameState: (score: number) => void;
   setJumpState: (state: { count: number; cooldown: number }) => void;
   setScore: (score: number) => void;
   selectedCharacter: Character;
