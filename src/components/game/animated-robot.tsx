@@ -9,14 +9,16 @@ import type { GameState } from '@/app/play/page';
 
 const LANE_WIDTH = 3;
 const NUM_LANES = 3;
+const JUMP_HEIGHT = 4;
+const GRAVITY = -15;
 
 interface AnimatedRobotProps {
   gameState: GameState;
+  onJump: () => boolean;
 }
 
-export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ gameState }, ref) => {
+export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ gameState, onJump }, ref) => {
   const internalRobotRef = useRef<THREE.Group>(null!);
-  // Expose the internal ref to the parent component
   useImperativeHandle(ref, () => internalRobotRef.current);
 
   const rightArmRef = useRef<THREE.Group>(null);
@@ -25,6 +27,9 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
 
   const [hovered, setHovered] = useState(false);
   const [waving, setWaving] = useState(false);
+  
+  const [isJumping, setIsJumping] = useState(false);
+  const yVelocity = useRef(0);
 
   const currentLane = useRef(1); // 0: left, 1: middle, 2: right
   const targetX = useRef(0);
@@ -32,17 +37,17 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
 
   const leftPressed = useKeyboardControls((state) => state[Controls.left]);
   const rightPressed = useKeyboardControls((state) => state[Controls.right]);
+  const jumpPressed = useKeyboardControls((state) => state[Controls.jump]);
 
   useFrame((state, delta) => {
     if (!internalRobotRef.current || !rightArmRef.current || !leftArmRef.current || !headRef.current) return;
     
-    // Don't run animations or controls if not in the right state
+    const groundPosition = 1.2;
+
     if (gameState === 'gameOver') {
-        // Optional: Add a 'defeated' animation
         return;
     }
 
-    // --- Game Controls (only when playing) ---
     if (gameState === 'playing') {
       if (rightPressed && moveRequest.current !== 'right') {
         moveRequest.current = 'right';
@@ -60,43 +65,58 @@ export const AnimatedRobot = forwardRef<THREE.Group, AnimatedRobotProps>(({ game
         targetX.current = (currentLane.current - 1) * LANE_WIDTH;
         moveRequest.current = null;
       }
+      
+      // Jump logic
+      if (jumpPressed && !isJumping) {
+        if (onJump()) { // Check cooldown and count with parent
+            yVelocity.current = Math.sqrt(-2 * GRAVITY * JUMP_HEIGHT);
+            setIsJumping(true);
+        }
+      }
+      
+      if (isJumping) {
+        yVelocity.current += GRAVITY * delta;
+        internalRobotRef.current.position.y += yVelocity.current * delta;
+        
+        if (internalRobotRef.current.position.y <= groundPosition) {
+            internalRobotRef.current.position.y = groundPosition;
+            setIsJumping(false);
+        }
+      }
+
     } else {
-        // Reset lane and position in menu
         currentLane.current = 1;
         targetX.current = 0;
+        internalRobotRef.current.position.y = groundPosition;
     }
     
-    // Smoothly move the player to the target lane
     internalRobotRef.current.position.x = THREE.MathUtils.lerp(internalRobotRef.current.position.x, targetX.current, delta * 10);
     
-
-    // --- Animations ---
     const elapsedTime = state.clock.getElapsedTime();
     
-    if (gameState === 'playing') {
-        // Running animation
+    if (gameState === 'playing' && !isJumping) {
         const runCycle = Math.sin(elapsedTime * 10);
         rightArmRef.current.rotation.x = runCycle * 0.8;
         leftArmRef.current.rotation.x = -runCycle * 0.8;
-        internalRobotRef.current.position.y = Math.abs(runCycle) * 0.1 + 1.2;
-    } else { // Menu idle animation
-        // Idle arm sway
+        internalRobotRef.current.position.y = Math.abs(runCycle) * 0.1 + groundPosition;
+    } else if (isJumping) {
+        // Freeze arms in a jumping pose
+        rightArmRef.current.rotation.x = -Math.PI / 4;
+        leftArmRef.current.rotation.x = Math.PI / 4;
+    }
+     else { 
         if (!waving) {
           rightArmRef.current.rotation.x = Math.sin(elapsedTime * 2) * 0.2;
           leftArmRef.current.rotation.x = -Math.sin(elapsedTime * 2) * 0.2;
         } else {
-            // Waving animation
             leftArmRef.current.rotation.x = 0;
             rightArmRef.current.rotation.z = Math.sin(elapsedTime * 10) * 0.5 + 0.5;
             rightArmRef.current.rotation.x = -Math.PI / 2;
         }
         
-        // Slight body bob
-        internalRobotRef.current.position.y = Math.sin(elapsedTime * 1.5) * 0.05 + 1.2;
+        internalRobotRef.current.position.y = Math.sin(elapsedTime * 1.5) * 0.05 + groundPosition;
     }
 
-
-    // Eye blinking (applies in all states)
     const leftEye = headRef.current.children[1] as THREE.Mesh;
     const rightEye = headRef.current.children[2] as THREE.Mesh;
     const eyeBlink = Math.abs(Math.sin(elapsedTime * 2));

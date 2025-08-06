@@ -19,9 +19,10 @@ export enum Controls {
 interface GameCanvasProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  setJumpState: (state: { count: number; cooldown: number }) => void;
 }
 
-export function GameCanvas({ gameState, setGameState }: GameCanvasProps) {
+export function GameCanvas({ gameState, setGameState, setJumpState }: GameCanvasProps) {
   const map: KeyboardControlsEntry<Controls>[] = [
     { name: Controls.left, keys: ['ArrowLeft', 'a', 'A'] },
     { name: Controls.right, keys: ['ArrowRight', 'd', 'D'] },
@@ -52,7 +53,7 @@ export function GameCanvas({ gameState, setGameState }: GameCanvasProps) {
             shadow-camera-bottom={-20}
           />
            <pointLight position={[-10, 5, -10]} intensity={1} color="white" />
-          <GameScene gameState={gameState} setGameState={setGameState} />
+          <GameScene gameState={gameState} setGameState={setGameState} setJumpState={setJumpState} />
         </Suspense>
       </Canvas>
     </KeyboardControls>

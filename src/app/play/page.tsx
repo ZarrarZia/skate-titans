@@ -4,7 +4,8 @@ import { Suspense, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Gamepad2 } from 'lucide-react';
+import { Gamepad2, ArrowUp } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 const GameCanvas = dynamic(() => import('@/components/game/game-canvas').then((mod) => mod.GameCanvas), {
   ssr: false,
@@ -15,6 +16,7 @@ export type GameState = 'menu' | 'playing' | 'gameOver';
 
 export default function PlayPage() {
   const [gameState, setGameState] = useState<GameState>('menu');
+  const [jumpState, setJumpState] = useState({ count: 2, cooldown: 0 });
 
   const startGame = () => {
     setGameState('playing');
@@ -30,7 +32,7 @@ export default function PlayPage() {
   return (
     <div className="relative h-[calc(100vh-4rem)] w-full">
       <Suspense fallback={<Skeleton className="h-full w-full" />}>
-        <GameCanvas gameState={gameState} setGameState={setGameState} />
+        <GameCanvas gameState={gameState} setGameState={setGameState} setJumpState={setJumpState} />
       </Suspense>
       {gameState === 'menu' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -52,6 +54,21 @@ export default function PlayPage() {
               Play Again
             </Button>
           </div>
+        </div>
+      )}
+      {gameState === 'playing' && (
+        <div className="absolute bottom-4 left-4 z-10 w-48 rounded-lg bg-black/50 p-4 text-white">
+          <h3 className="font-bold">Jump Status</h3>
+          <div className="flex items-center gap-2">
+            <ArrowUp className="h-6 w-6" />
+            <p className="text-2xl font-bold">{jumpState.count}</p>
+          </div>
+          {jumpState.cooldown > 0 && (
+            <div className="mt-2">
+              <p className="text-xs">Cooldown:</p>
+              <Progress value={(1 - jumpState.cooldown / 120) * 100} className="h-2" />
+            </div>
+          )}
         </div>
       )}
     </div>

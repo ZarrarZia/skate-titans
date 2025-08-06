@@ -6,6 +6,7 @@ import type { GameState } from '@/app/play/page';
 import { useFrame } from '@react-three/fiber';
 import { useRef, useState, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
+import { Car } from './car';
 
 const LANE_WIDTH = 3;
 const NUM_LANES = 3;
@@ -26,11 +27,12 @@ function Garage() {
 interface GameSceneProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
+  setJumpState: (state: { count: number; cooldown: number }) => void;
 }
 
 let nextCarId = 0;
 
-interface Car {
+interface CarData {
     id: number;
     position: THREE.Vector3;
     ref: React.RefObject<THREE.Group>;
@@ -66,12 +68,11 @@ const RoadSegment = ({ fRef, position }: { fRef: React.Ref<THREE.Group>, positio
 );
 
 
-export function GameScene({ gameState, setGameState }: GameSceneProps) {
+export function GameScene({ gameState, setGameState, setJumpState }: GameSceneProps) {
   const robotRef = useRef<THREE.Group>(null!);
   
-  // Use state for triggering re-render, but manage positions in a ref.
-  const carsRef = useRef<Car[]>([]);
-  const [iteration, setIteration] = useState(0); // Used to force re-render
+  const carsRef = useRef<CarData[]>([]);
+  const [iteration, setIteration] = useState(0); 
 
   const spawnTimer = useRef(0);
   const playerBox = useMemo(() => new THREE.Box3(), []);
@@ -79,7 +80,9 @@ export function GameScene({ gameState, setGameState }: GameSceneProps) {
   const roadSegment1Ref = useRef<THREE.Group>(null!);
   const roadSegment2Ref = useRef<THREE.Group>(null!);
   
-  // Reset game state when gameState changes
+  const jumpCount = useRef(2);
+  const jumpCooldown = useRef(0);
+
   useEffect(() => {
     if (gameState === 'menu' || gameState === 'gameOver') {
       carsRef.current = [];
@@ -88,9 +91,12 @@ export function GameScene({ gameState, setGameState }: GameSceneProps) {
       }
       if (roadSegment1Ref.current) roadSegment1Ref.current.position.z = 0;
       if (roadSegment2Ref.current) roadSegment2Ref.current.position.z = -ROAD_LENGTH;
+      jumpCount.current = 2;
+      jumpCooldown.current = 0;
+      setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
       setIteration(i => i + 1);
     }
-  }, [gameState]);
+  }, [gameState, setJumpState]);
 
 
   useFrame((state, delta) => {
@@ -102,6 +108,15 @@ export function GameScene({ gameState, setGameState }: GameSceneProps) {
         state.camera.lookAt(robotRef.current.position);
       }
       return;
+    }
+
+    if (jumpCooldown.current > 0) {
+      jumpCooldown.current -= delta;
+      if (jumpCooldown.current <= 0) {
+        jumpCount.current = 2;
+        jumpCooldown.current = 0;
+      }
+      setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
     }
     
     const speed = 10;
@@ -134,17 +149,20 @@ export function GameScene({ gameState, setGameState }: GameSceneProps) {
             ref: React.createRef<THREE.Group>(),
             box: new THREE.Box3(),
         });
-        setIteration(i => i + 1); // Trigger re-render to show new car
+        setIteration(i => i + 1);
     }
 
     if (robotRef.current) {
-      playerBox.setFromObject(robotRef.current);
+      const robotMesh = robotRef.current.children[0];
+      if (robotMesh) {
+          playerBox.setFromObject(robotMesh);
+      }
     }
 
-    const activeCars: Car[] = [];
+    const activeCars: CarData[] = [];
     for (const car of carsRef.current) {
         if (car.position.z > state.camera.position.z + 10) {
-            continue; // Car is behind the camera, let it get garbage collected
+            continue; 
         }
 
         if (car.ref.current) {
@@ -156,16 +174,27 @@ export function GameScene({ gameState, setGameState }: GameSceneProps) {
         activeCars.push(car);
     }
     
-    // Only update if the array has changed
     if (activeCars.length !== carsRef.current.length) {
       carsRef.current = activeCars;
-      setIteration(i => i + 1); // Trigger re-render to remove old cars
+      setIteration(i => i + 1);
     }
   });
+
+  const handleJump = () => {
+    if (jumpCount.current > 0) {
+      jumpCount.current--;
+      if (jumpCooldown.current <= 0) {
+        jumpCooldown.current = 120;
+      }
+      setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
+      return true; // Jump is allowed
+    }
+    return false; // No jumps left
+  };
   
   return (
     <>
-      <AnimatedRobot ref={robotRef} gameState={gameState} />
+      <AnimatedRobot ref={robotRef} gameState={gameState} onJump={handleJump} />
       
       {gameState === 'menu' && <Garage />}
       {gameState !== 'menu' && (
@@ -175,14 +204,8 @@ export function GameScene({ gameState, setGameState }: GameSceneProps) {
         </>
       )}
 
-      {/* This renders the cars based on the ref, not state */}
       {carsRef.current.map(car => (
-          <group key={car.id} ref={car.ref} position={car.position}>
-             <mesh castShadow>
-                <boxGeometry args={[2, 1.5, 4]} />
-                <meshStandardMaterial color={`hsl(${car.id * 40}, 80%, 50%)`} />
-             </mesh>
-          </group>
+          <Car key={car.id} carRef={car.ref} position={car.position} color={`hsl(${car.id * 40}, 80%, 50%)`} />
       ))}
     </>
   );
