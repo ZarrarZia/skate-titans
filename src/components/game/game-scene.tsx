@@ -30,6 +30,7 @@ interface GameSceneProps {
   gameState: GameState;
   setGameState: (state: GameState) => void;
   setJumpState: (state: { count: number; cooldown: number }) => void;
+  setScore: (score: number) => void;
 }
 
 let nextCarId = 0;
@@ -70,7 +71,7 @@ const RoadSegment = ({ fRef, position }: { fRef: React.Ref<THREE.Group>, positio
 );
 
 
-export function GameScene({ gameState, setGameState, setJumpState }: GameSceneProps) {
+export function GameScene({ gameState, setGameState, setJumpState, setScore }: GameSceneProps) {
   const robotRef = useRef<THREE.Group>(null!);
   
   const carsRef = useRef<CarData[]>([]);
@@ -85,6 +86,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
   
   const jumpCount = useRef(2);
   const jumpCooldown = useRef(0);
+  const score = useRef(0);
 
   useEffect(() => {
     if (gameState === 'menu' || gameState === 'gameOver') {
@@ -97,10 +99,12 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
       jumpCount.current = 2;
       jumpCooldown.current = 0;
       elapsedTime.current = 0;
+      score.current = 0;
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
+      setScore(score.current);
       setIteration(i => i + 1);
     }
-  }, [gameState, setJumpState]);
+  }, [gameState, setJumpState, setScore]);
 
 
   useFrame((state, delta) => {
@@ -177,8 +181,14 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     }
 
     const activeCars: CarData[] = [];
+    let scoredThisFrame = false;
     for (const car of carsRef.current) {
         if (car.position.z > state.camera.position.z + 10) {
+            if (!scoredThisFrame) {
+                score.current++;
+                setScore(score.current);
+                scoredThisFrame = true; // Prevent scoring multiple times for the same group of cars passing
+            }
             continue; 
         }
 

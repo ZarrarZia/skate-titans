@@ -4,7 +4,7 @@ import { Suspense, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, ArrowUp } from 'lucide-react';
+import { Gamepad2, ArrowUp, Trophy } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 const GameCanvas = dynamic(() => import('@/components/game/game-canvas').then((mod) => mod.GameCanvas), {
@@ -19,13 +19,16 @@ const JUMP_COOLDOWN_SECONDS = 120;
 export default function PlayPage() {
   const [gameState, setGameState] = useState<GameState>('menu');
   const [jumpState, setJumpState] = useState({ count: 2, cooldown: 0 });
+  const [score, setScore] = useState(0);
 
   const startGame = () => {
     setGameState('playing');
+    setScore(0);
   };
   
   const restartGame = () => {
     setGameState('menu');
+    setScore(0);
      setTimeout(() => {
       setGameState('playing');
     }, 100);
@@ -34,7 +37,7 @@ export default function PlayPage() {
   return (
     <div className="relative h-screen w-full">
       <Suspense fallback={<Skeleton className="h-full w-full" />}>
-        <GameCanvas gameState={gameState} setGameState={setGameState} setJumpState={setJumpState} />
+        <GameCanvas gameState={gameState} setGameState={setGameState} setJumpState={setJumpState} setScore={setScore} />
       </Suspense>
       {gameState === 'menu' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -52,6 +55,7 @@ export default function PlayPage() {
         <div className="absolute inset-0 flex items-center justify-center bg-black/70">
           <div className="flex flex-col items-center gap-4 text-center text-white">
             <h1 className="text-7xl font-bold text-red-500 text-shadow">Game Over</h1>
+            <p className="text-4xl font-bold">Score: {score}</p>
             <Button size="lg" onClick={restartGame} className="mt-4 h-16 text-2xl">
               Play Again
             </Button>
@@ -59,19 +63,27 @@ export default function PlayPage() {
         </div>
       )}
       {gameState === 'playing' && (
-        <div className="absolute bottom-4 left-4 z-10 w-48 rounded-lg bg-black/50 p-4 text-white">
-          <h3 className="font-bold">Jump Status</h3>
-          <div className="flex items-center gap-2">
-            <ArrowUp className="h-6 w-6" />
-            <p className="text-2xl font-bold">{jumpState.count}</p>
-          </div>
-          {jumpState.cooldown > 0 && (
-            <div className="mt-2">
-              <p className="text-xs">Cooldown:</p>
-              <Progress value={(1 - jumpState.cooldown / JUMP_COOLDOWN_SECONDS) * 100} className="h-2" />
+        <>
+          <div className="absolute top-4 left-4 z-10 w-48 rounded-lg bg-black/50 p-4 text-white">
+            <h3 className="font-bold">Jump Status</h3>
+            <div className="flex items-center gap-2">
+              <ArrowUp className="h-6 w-6" />
+              <p className="text-2xl font-bold">{jumpState.count}</p>
             </div>
-          )}
-        </div>
+            {jumpState.cooldown > 0 && (
+              <div className="mt-2">
+                <p className="text-xs">Cooldown:</p>
+                <Progress value={(1 - jumpState.cooldown / JUMP_COOLDOWN_SECONDS) * 100} className="h-2" />
+              </div>
+            )}
+          </div>
+          <div className="absolute top-4 right-4 z-10 rounded-lg bg-black/50 p-4 text-white">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-8 w-8 text-yellow-400" />
+              <p className="text-4xl font-bold">{score}</p>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
