@@ -86,7 +86,7 @@ export function AnimatedRobot() {
     setWaving(false);
   };
   
-  const bodyMaterial = <meshStandardMaterial color="#333" metalness={0.9} roughness={0.3} />;
+  const bodyMaterial = <meshStandardMaterial color="gray" metalness={0.9} roughness={0.3} />;
 
   return (
     <group 
@@ -123,11 +123,11 @@ export function AnimatedRobot() {
         {/* Eyes */}
         <mesh position={[-0.15, 0.1, 0.35]}>
           <sphereGeometry args={[0.08, 16, 16]} />
-          <meshStandardMaterial color="aqua" emissive="aqua" emissiveIntensity={3} toneMapped={false}/>
+          <meshStandardMaterial color="red" emissive="red" emissiveIntensity={3} toneMapped={false}/>
         </mesh>
         <mesh position={[0.15, 0.1, 0.35]}>
           <sphereGeometry args={[0.08, 16, 16]} />
-          <meshStandardMaterial color="aqua" emissive="aqua" emissiveIntensity={3} toneMapped={false}/>
+          <meshStandardMaterial color="red" emissive="red" emissiveIntensity={3} toneMapped={false}/>
         </mesh>
       </group>
 

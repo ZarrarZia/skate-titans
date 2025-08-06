@@ -43,7 +43,7 @@ export function GameCanvas() {
             shadow-camera-top={15}
             shadow-camera-bottom={-15}
           />
-           <pointLight position={[-5, 5, -5]} intensity={1} color="lightblue" />
+           <pointLight position={[-5, 5, -5]} intensity={1} color="white" />
           <GameScene />
           <OrbitControls />
         </Suspense>
