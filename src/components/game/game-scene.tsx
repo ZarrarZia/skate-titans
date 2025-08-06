@@ -74,7 +74,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
   const carsRef = useRef<CarData[]>([]);
   const [iteration, setIteration] = useState(0); 
 
-  const spawnTimer = useRef(1.5);
+  const spawnTimer = useRef(2.5);
   const playerBox = useMemo(() => new THREE.Box3(), []);
   const elapsedTime = useRef(0);
 
@@ -116,15 +116,15 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
 
     if (jumpCooldown.current > 0) {
       jumpCooldown.current -= 1; 
-      if (jumpCooldown.current <= 0) {
+      if (jumpCooldown.current < 0) { // Changed to < 0 to avoid floating point issues
         jumpCount.current = 2;
         jumpCooldown.current = 0;
       }
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
     }
     
-    const initialSpeed = 8;
-    const speedRamp = 0.2;
+    const initialSpeed = 6;
+    const speedRamp = 0.15;
     const speed = initialSpeed + elapsedTime.current * speedRamp;
     
     if(robotRef.current) {
@@ -150,13 +150,14 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
       roadSegment2Ref.current.position.z -= ROAD_LENGTH * 2;
     }
 
-    spawnTimer.current += delta;
-    const initialSpawnRate = 1.8;
-    const minSpawnRate = 0.5;
-    const spawnRate = Math.max(minSpawnRate, initialSpawnRate - elapsedTime.current * 0.05);
+    spawnTimer.current -= delta;
+    const initialSpawnRate = 2.0;
+    const minSpawnRate = 0.6;
+    const spawnRateRamp = 0.02;
+    const currentSpawnRate = Math.max(minSpawnRate, initialSpawnRate - elapsedTime.current * spawnRateRamp);
 
-    if (spawnTimer.current > spawnRate) { 
-        spawnTimer.current = Math.random() * 0.5; // Add slight randomness
+    if (spawnTimer.current <= 0) { 
+        spawnTimer.current = currentSpawnRate + (Math.random() - 0.5) * 0.4;
         const lane = Math.floor(Math.random() * NUM_LANES);
         const laneX = (lane - 1) * LANE_WIDTH;
         
@@ -181,8 +182,15 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
 
         if (car.ref.current) {
             car.box.setFromObject(car.ref.current);
+            // The crucial fix: check if the player's bounding box intersects AND
+            // if the player is not clearly above the car.
             if (playerBox.intersectsBox(car.box)) {
-                setGameState('gameOver');
+                // Check if player's bottom is above car's top
+                if (playerBox.min.y > car.box.max.y) {
+                    // This is a successful jump, do nothing
+                } else {
+                    setGameState('gameOver');
+                }
             }
         }
         activeCars.push(car);
@@ -198,7 +206,7 @@ export function GameScene({ gameState, setGameState, setJumpState }: GameScenePr
     if (jumpCount.current > 0) {
       jumpCount.current--;
       if (jumpCooldown.current <= 0) {
-        jumpCooldown.current = 120; 
+        jumpCooldown.current = 120; // 120 frames cooldown (approx 2 seconds at 60fps)
       }
       setJumpState({ count: jumpCount.current, cooldown: jumpCooldown.current });
       return true;
