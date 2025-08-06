@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { PerspectiveCamera, KeyboardControls, type KeyboardControlsEntry, OrbitControls } from '@react-three/drei';
+import { PerspectiveCamera, KeyboardControls, type KeyboardControlsEntry } from '@react-three/drei';
 import { GameScene } from '@/components/game/game-scene';
 import { Color } from 'three';
 import type { GameState } from '@/app/play/page';
@@ -33,6 +33,7 @@ export function GameCanvas({ gameState, setGameState }: GameCanvasProps) {
     <KeyboardControls map={map}>
       <Canvas shadows onCreated={({ scene }) => {
         scene.background = new Color('#111');
+        scene.fog = new THREE.Fog('black', 10, 40);
       }}>
         <Suspense fallback={null}>
           <PerspectiveCamera makeDefault position={[0, 5, 10]} fov={60} />
@@ -51,7 +52,6 @@ export function GameCanvas({ gameState, setGameState }: GameCanvasProps) {
           />
            <pointLight position={[-10, 5, -10]} intensity={1} color="white" />
           <GameScene gameState={gameState} setGameState={setGameState} />
-          {gameState === 'menu' && <OrbitControls />}
         </Suspense>
       </Canvas>
     </KeyboardControls>
