@@ -25,8 +25,8 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <div
           className="fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat bg-fixed"
-          style={{ backgroundImage: "url('https://placehold.co/1920x1080/0d0712/1d1128.png')" }}
-          data-ai-hint="graffiti subway wall"
+          style={{ backgroundImage: "url('/a0134446-e522-452a-ac53-06696669f697.jpeg')" }}
+          data-ai-hint="robot running highway"
         >
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
         </div>
