@@ -222,7 +222,7 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
         const activeCars: CarData[] = [];
         for (const car of prevCars) {
             if (car.position.z > robotRef.current.position.z + 20) {
-                if (!prevCars.find(c => c.id === car.id)?.ref.current?.userData.passed) {
+                if (!car.ref.current?.userData.passed) {
                     score.current++;
                     setScore(score.current);
                     if(car.ref.current) car.ref.current.userData.passed = true;
@@ -263,11 +263,15 @@ export function GameScene({ gameState, setGameState, setJumpState, setScore, sel
       ) : (
         <>
             <CharacterModel ref={robotRef} selectedCharacter={selectedCharacter} gameState={gameState} onJump={handleJump} />
-            <RoadSegment ref={roadSegment1Ref} position={[0,0,0]} />
-            <RoadSegment ref={roadSegment2Ref} position={[0,0,-ROAD_LENGTH]} />
-            {cars.map(car => (
-              <CarModel key={car.id} fRef={car.ref} position={car.position} />
-            ))}
+            {gameState === 'playing' || gameState === 'paused' || gameState === 'gameOver' ? (
+                 <>
+                    <RoadSegment ref={roadSegment1Ref} position={[0,0,0]} />
+                    <RoadSegment ref={roadSegment2Ref} position={[0,0,-ROAD_LENGTH]} />
+                    {cars.map(car => (
+                    <CarModel key={car.id} fRef={car.ref} position={car.position} />
+                    ))}
+                </>
+            ) : null}
         </>
       )}
     </>

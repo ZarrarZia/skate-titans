@@ -2,11 +2,11 @@
 'use client';
 
 import { Suspense, useState, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, ArrowUp, Trophy, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Gamepad2, ArrowUp, Trophy, ArrowLeft, ArrowRight, Pause, Play, RotateCw, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 const GameCanvas = dynamic(() => import('@/components/game/game-canvas').then((mod) => mod.GameCanvas), {
@@ -14,7 +14,7 @@ const GameCanvas = dynamic(() => import('@/components/game/game-canvas').then((m
   loading: () => <Skeleton className="h-full w-full" />,
 });
 
-export type GameState = 'menu' | 'playing' | 'gameOver' | 'characterSelect';
+export type GameState = 'menu' | 'playing' | 'gameOver' | 'characterSelect' | 'paused';
 export type Character = 'boy' | 'girl' | 'cat';
 
 const characters: Character[] = ['boy', 'girl', 'cat'];
@@ -28,6 +28,7 @@ export const JUMP_COOLDOWN_SECONDS = 120;
 
 function PlayPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const username = useMemo(() => searchParams.get('username') || 'Player', [searchParams]);
 
   const [gameState, setGameState] = useState<GameState>('characterSelect');
@@ -50,6 +51,10 @@ function PlayPageContent() {
     setGameState('characterSelect');
     setScore(0);
     setFinalScore(0);
+  }
+  
+  const exitGame = () => {
+    router.push('/');
   }
 
   const handleNextCharacter = () => {
@@ -113,15 +118,43 @@ function PlayPageContent() {
             <h1 className="text-7xl font-bold text-red-500 text-shadow">Game Over</h1>
             {getGameOverMessage()}
             <p className="text-2xl">Final Score: {finalScore}</p>
-            <Button size="lg" onClick={restartGame} className="mt-4 h-16 text-2xl">
-              Play Again
-            </Button>
+            <div className="flex gap-4">
+              <Button size="lg" onClick={restartGame} className="mt-4 h-16 text-2xl">
+                <RotateCw className="mr-2 h-6 w-6" />
+                Play Again
+              </Button>
+               <Button size="lg" onClick={exitGame} variant="destructive" className="mt-4 h-16 text-2xl">
+                 <X className="mr-2 h-6 w-6" />
+                Exit
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+       {gameState === 'paused' && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+          <div className="flex flex-col items-center gap-4 text-center text-white">
+            <h1 className="text-7xl font-bold text-shadow">Paused</h1>
+             <div className="flex flex-col gap-4 w-64">
+              <Button size="lg" onClick={() => setGameState('playing')} className="h-16 text-2xl">
+                <Play className="mr-4 h-8 w-8" />
+                Resume
+              </Button>
+               <Button size="lg" onClick={restartGame} variant="outline" className="h-16 text-2xl bg-transparent">
+                 <RotateCw className="mr-4 h-8 w-8" />
+                Restart
+              </Button>
+               <Button size="lg" onClick={exitGame} variant="destructive" className="h-16 text-2xl">
+                 <X className="mr-4 h-8 w-8" />
+                Exit
+              </Button>
+            </div>
           </div>
         </div>
       )}
       {gameState === 'playing' && (
         <>
-          <div className="absolute top-4 left-4 z-10 w-48 rounded-lg bg-black/50 p-4 text-white">
+           <div className="absolute top-4 left-4 z-10 w-48 rounded-lg bg-black/50 p-4 text-white">
             <h3 className="font-bold">Jump Status</h3>
             <div className="flex items-center gap-2">
               <ArrowUp className="h-6 w-6" />
@@ -134,11 +167,17 @@ function PlayPageContent() {
               </div>
             )}
           </div>
-          <div className="absolute top-4 right-4 z-10 rounded-lg bg-black/50 p-4 text-white">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-8 w-8 text-yellow-400" />
-              <p className="text-4xl font-bold">{score}</p>
+           <div className="absolute top-4 right-4 z-10 flex items-center gap-4">
+             <div className="rounded-lg bg-black/50 p-4 text-white">
+                <div className="flex items-center gap-2">
+                <Trophy className="h-8 w-8 text-yellow-400" />
+                <p className="text-4xl font-bold">{score}</p>
+                </div>
             </div>
+             <Button size="icon" variant="outline" className="h-14 w-14 bg-black/50" onClick={() => setGameState('paused')}>
+                <Pause className="h-8 w-8" />
+                <span className="sr-only">Pause</span>
+            </Button>
           </div>
         </>
       )}
