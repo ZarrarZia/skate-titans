@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Skate Titans - The Ultimate Endless Runner',
-  description: 'Dodge cars and become a legend in this endless runner adventure!',
+  title: 'Skate Titans: Free Endless Runner Robot Game for Kids - Play Now!',
+  description: 'Jump into Skate Titans, the action-packed free endless runner game for kids! Dodge cars, collect points, and become a legend in this fun robot adventure. Play for free online!',
 };
 
 export default function RootLayout({

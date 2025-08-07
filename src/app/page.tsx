@@ -48,7 +48,7 @@ export default function HomePage() {
               Skate Titans
             </h1>
             <p className="mx-auto mt-4 max-w-[700px] text-lg text-foreground/80 md:text-xl">
-              Dodge the cars, collect points, and become a legend of the subway.
+              The ultimate free endless runner game for kids! Dodge cars, collect points, and become a robot legend.
             </p>
             <Button size="lg" className="group mt-8 text-2xl" onClick={handleStart}>
               <Gamepad2 className="mr-2 h-6 w-6 transition-transform group-hover:scale-110" />
