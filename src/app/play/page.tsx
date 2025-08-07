@@ -1,7 +1,8 @@
 
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,10 @@ const characterNames: { [key in Character]: string } = {
 
 export const JUMP_COOLDOWN_SECONDS = 120;
 
-export default function PlayPage() {
+function PlayPageContent() {
+  const searchParams = useSearchParams();
+  const username = useMemo(() => searchParams.get('username') || 'Player', [searchParams]);
+
   const [gameState, setGameState] = useState<GameState>('characterSelect');
   const [selectedCharacter, setSelectedCharacter] = useState<Character>('boy');
   const [jumpState, setJumpState] = useState({ count: 2, cooldown: 0 });
@@ -58,6 +62,13 @@ export default function PlayPage() {
     const currentIndex = characters.indexOf(selectedCharacter);
     const prevIndex = (currentIndex - 1 + characters.length) % characters.length;
     setSelectedCharacter(characters[prevIndex]);
+  };
+
+  const getGameOverMessage = () => {
+    if (finalScore >= 15) {
+      return <p className="text-4xl font-bold text-green-400 animate-pulse">Excellent, {username}!</p>;
+    }
+    return <p className="text-4xl font-bold text-orange-400">Good try, {username}!</p>;
   };
 
 
@@ -100,7 +111,8 @@ export default function PlayPage() {
         <div className="absolute inset-0 flex items-center justify-center bg-black/70">
           <div className="flex flex-col items-center gap-4 text-center text-white">
             <h1 className="text-7xl font-bold text-red-500 text-shadow">Game Over</h1>
-            <p className="text-4xl font-bold">Final Score: {finalScore}</p>
+            {getGameOverMessage()}
+            <p className="text-2xl">Final Score: {finalScore}</p>
             <Button size="lg" onClick={restartGame} className="mt-4 h-16 text-2xl">
               Play Again
             </Button>
@@ -132,4 +144,12 @@ export default function PlayPage() {
       )}
     </div>
   );
+}
+
+export default function PlayPage() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full bg-black" />}>
+      <PlayPageContent />
+    </Suspense>
+  )
 }

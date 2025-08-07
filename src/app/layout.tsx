@@ -1,12 +1,10 @@
+
 import type { Metadata } from 'next';
-import { Toaster } from '@/components/ui/toaster';
-import { AdaptiveAmbiance } from '@/components/adaptive-ambiance';
-import { LayoutProvider } from '@/components/layout-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Skate Titans - The Ultimate Endless Runner',
-  description: 'Download Skate Titans and join the endless running adventure!',
+  description: 'Dodge cars and become a legend in this endless runner adventure!',
 };
 
 export default function RootLayout({
@@ -32,9 +30,7 @@ export default function RootLayout({
         >
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
         </div>
-        <LayoutProvider>{children}</LayoutProvider>
-        <Toaster />
-        <AdaptiveAmbiance />
+        <main>{children}</main>
       </body>
     </html>
   );
